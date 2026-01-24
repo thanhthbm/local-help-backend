@@ -28,11 +28,21 @@ public class FirebaseAuthFilter extends OncePerRequestFilter {
       try{
         FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(token);
 
+
         String uid = decodedToken.getUid();
-        //then set the uid in the authentication context
+        String email = decodedToken.getEmail();
+
+
         Authentication authentication = new UsernamePasswordAuthenticationToken(
-            uid, null, List.of()
+            uid,
+            null,
+            List.of()
         );
+
+
+        request.setAttribute("firebaseUid", uid);
+        request.setAttribute("email", email);
+
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
       } catch (Exception e){
