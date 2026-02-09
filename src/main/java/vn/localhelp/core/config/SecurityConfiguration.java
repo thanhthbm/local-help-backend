@@ -26,8 +26,9 @@ public class SecurityConfiguration {
                 .accessDeniedHandler(customAccessDeniedHandler)
         )
         .authorizeHttpRequests(auth -> auth
-            .requestMatchers("/public/**").permitAll()
-            .requestMatchers("/auth/**").permitAll()
+//            .requestMatchers("/public/**").permitAll()
+//            .requestMatchers("/api/auth/**", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
+//            .requestMatchers("/api/admin/**").hasRole("ADMIN")
             .anyRequest().authenticated()
         )
         .addFilterBefore(

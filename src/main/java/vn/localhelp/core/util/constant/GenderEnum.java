@@ -1,5 +1,5 @@
 package vn.localhelp.core.util.constant;
 
 public enum GenderEnum {
-  MALE, FEMALE, OTHER
+  MALE, FEMALE, UNKNOWN, OTHER
 }

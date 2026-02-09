@@ -1,0 +1,23 @@
+package vn.localhelp.core.service;
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import vn.localhelp.core.domain.User;
+import vn.localhelp.core.domain.mapper.UserMapper;
+import vn.localhelp.core.domain.response.user.UserResponse;
+import vn.localhelp.core.repository.UserRepository;
+import vn.localhelp.core.util.NotFoundException;
+
+@Service
+@RequiredArgsConstructor
+public class UserService {
+  private final UserRepository userRepository;
+  private final UserMapper userMapper;
+
+  public UserResponse getMyProfile(String firebaseUid){
+    User user = userRepository.findByFirebaseUid(firebaseUid)
+        .orElseThrow(() -> new NotFoundException("User not found"));
+
+    return this.userMapper.toResponse(user);
+  }
+}
