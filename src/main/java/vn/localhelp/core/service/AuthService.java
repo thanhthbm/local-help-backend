@@ -6,7 +6,7 @@ import com.google.firebase.auth.UserRecord;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import vn.localhelp.core.domain.User;
+import vn.localhelp.core.domain.entity.User;
 import vn.localhelp.core.domain.mapper.UserMapper;
 import vn.localhelp.core.domain.response.user.UserResponse;
 import vn.localhelp.core.repository.UserRepository;

@@ -24,6 +24,9 @@
     <org.mapstruct.version>1.6.3</org.mapstruct.version>
     <!-- Compatible with Spring Boot 3.5.x -->
     <spring-cloud.version>2025.0.1</spring-cloud.version>
+    <!-- Ensure Maven reads resource files as UTF-8 to avoid MalformedInputException -->
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
   </properties>
 
   <!-- ================= DEPENDENCIES ================= -->
@@ -142,6 +145,14 @@
 
   <build>
     <plugins>
+      <!-- Ensure resources are processed with UTF-8 encoding -->
+      <plugin>
+        <artifactId>maven-resources-plugin</artifactId>
+        <version>3.3.1</version>
+        <configuration>
+          <encoding>UTF-8</encoding>
+        </configuration>
+      </plugin>
 
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -153,6 +164,12 @@
             <path>
               <groupId>org.projectlombok</groupId>
               <artifactId>lombok</artifactId>
+            </path>
+            <!-- MapStruct annotation processor so MapStruct-generated implementations are created at compile time -->
+            <path>
+              <groupId>org.mapstruct</groupId>
+              <artifactId>mapstruct-processor</artifactId>
+              <version>${org.mapstruct.version}</version>
             </path>
           </annotationProcessorPaths>
         </configuration>
