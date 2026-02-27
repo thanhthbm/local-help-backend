@@ -17,10 +17,20 @@ public interface JobMapper {
   @Mapping(target = "createdAt", ignore = true)
   @Mapping(target = "jobStatus", ignore = true)
   @Mapping(target = "creator", ignore = true)
+  @Mapping(target = "helper", ignore = true)
+  @Mapping(target = "review", ignore = true)
   @Mapping(target = "category", ignore = true)
   @Mapping(target = "jobImages", ignore = true)
   Job toEntity(CreateJobRequest createJobRequest);
 
+  @Mapping(source = "jobStatus", target = "status")
+  @Mapping(source = "category.name", target = "categoryName")
+  @Mapping(source = "category.iconUrl", target = "categoryIcon")
+  @Mapping(source = "creator.fullName", target = "creatorName")
+  @Mapping(source = "creator.avatarUrl", target = "creatorAvatar")
+  @Mapping(source = "creator.reputationScore", target = "creatorRating")
+  @Mapping(source = "helper.fullName", target = "helperName")
+  @Mapping(source = "helper.avatarUrl", target = "helperAvatar")
   @Mapping(source = "jobImages", target = "images", qualifiedByName = "mapJobImagesToStrings")
   JobResponse toResponse(Job job);
 
