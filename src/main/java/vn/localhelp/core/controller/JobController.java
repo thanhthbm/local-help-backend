@@ -2,6 +2,8 @@ package vn.localhelp.core.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,5 +23,11 @@ public class JobController {
   public ResponseEntity<JobResponse> createJob(@RequestBody CreateJobRequest createJobRequest){
     String currentFirebaseUid = FirebaseUtil.getCurrentUserUid();
     return ResponseEntity.ok(jobService.createJob(currentFirebaseUid, createJobRequest));
+  }
+
+  @PatchMapping("/{id}/stop")
+  public ResponseEntity<JobResponse> stopJob(@PathVariable Long id) {
+    String currentFirebaseUid = FirebaseUtil.getCurrentUserUid();
+    return ResponseEntity.ok(jobService.stopJob(currentFirebaseUid, id));
   }
 }
