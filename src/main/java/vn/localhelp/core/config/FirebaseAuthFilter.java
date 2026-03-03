@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -16,9 +17,14 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import vn.localhelp.core.domain.entity.User;
+import vn.localhelp.core.repository.UserRepository;
+import vn.localhelp.core.util.NotFoundException;
 
 @Component
+@RequiredArgsConstructor
 public class FirebaseAuthFilter extends OncePerRequestFilter {
+  private final UserRepository userRepository;
 
   @Override
   protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
@@ -35,14 +41,13 @@ public class FirebaseAuthFilter extends OncePerRequestFilter {
         String uid = decodedToken.getUid();
         String email = decodedToken.getEmail();
 
-        List<GrantedAuthority> authorities = new ArrayList<>();
-        String role = (String) decodedToken.getClaims().get("role");
+        User user = userRepository.findByFirebaseUid(uid)
+            .orElseThrow(() -> new NotFoundException("User not found in local database"));
 
-        if (role != null) {
-          authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
-        } else {
-          authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
-        }
+        String role = user.getRole().name();
+        List<GrantedAuthority> authorities = new ArrayList<>();
+        authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
+
 
         UsernamePasswordAuthenticationToken authentication =
             new UsernamePasswordAuthenticationToken(uid, email, authorities);

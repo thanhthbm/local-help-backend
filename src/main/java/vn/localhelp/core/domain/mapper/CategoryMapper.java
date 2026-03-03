@@ -3,7 +3,6 @@ package vn.localhelp.core.domain.mapper;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
-import org.mapstruct.Mappings;
 import vn.localhelp.core.domain.entity.Category;
 import vn.localhelp.core.domain.request.category.CategoryRequest;
 import vn.localhelp.core.domain.response.category.CategoryResponse;

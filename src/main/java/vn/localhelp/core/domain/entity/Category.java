@@ -28,4 +28,5 @@ public class Category {
   private String iconUrl;
   @Column(columnDefinition = "TEXT")
   private String description;
+  private String colorCode;
 }

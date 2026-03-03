@@ -17,4 +17,7 @@ public class CategoryRequest {
 
   @Size(max = 255, message = "Description must not exceed 255 characters")
   private String description;
+
+  @NotBlank(message = "Color code must not be blank")
+  private String colorCode;
 }
