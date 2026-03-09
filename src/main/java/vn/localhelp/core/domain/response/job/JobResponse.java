@@ -22,6 +22,8 @@ public class JobResponse {
   private String creatorName;
   private String creatorAvatar;
   private Double creatorRating;
+  private String helperName;
+  private String helperAvatar;
   private List<String> images;
   private LocalDateTime createdAt;
 }

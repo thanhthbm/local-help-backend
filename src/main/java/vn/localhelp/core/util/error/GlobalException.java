@@ -36,4 +36,17 @@ public class GlobalException {
     return ResponseEntity.status(HttpStatus.NOT_FOUND).body(res);
   }
 
+  @ExceptionHandler(value = {
+      IllegalStateException.class
+  })
+  public ResponseEntity<RestResponse<Object>> handleIllegalStateException(Exception ex) {
+    RestResponse<Object> res = RestResponse.builder()
+        .statusCode(HttpStatus.BAD_REQUEST.value())
+        .message(ex.getMessage())
+        .error("Bad Request")
+        .build();
+
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(res);
+  }
+
 }
