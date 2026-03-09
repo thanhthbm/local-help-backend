@@ -23,6 +23,11 @@ public class UserResponse {
   private UserRole role;
   private UserStatus status;
   private GenderEnum gender;
+  private String bio;
+  private int completedJobs;
+  private int totalReviews;
+  private double averageRating;
+  private double responseRate; // Tỷ lệ phản hồi tin nhắn
 
   private LocalDateTime createdAt;
 }

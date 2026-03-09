@@ -77,6 +77,9 @@ public class User {
   @OneToMany(mappedBy = "helper", fetch = FetchType.LAZY)
   private List<Job> jobsCompleted;
 
+  @Column(columnDefinition = "TEXT")
+  private String bio;
+
   @CreatedDate
   @Column(name = "created_at", nullable = false, updatable = false)
   private LocalDateTime createdAt;

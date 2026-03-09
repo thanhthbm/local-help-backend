@@ -17,6 +17,7 @@ public class JobResponse {
   private Double latitude;
   private Double longitude;
   private JobStatus status;
+  private String bio;
   private String categoryName;
   private String categoryIcon;
   private String creatorName;
