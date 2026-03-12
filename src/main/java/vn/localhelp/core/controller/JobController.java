@@ -1,5 +1,6 @@
 package vn.localhelp.core.controller;
 
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,6 +15,7 @@ import vn.localhelp.core.domain.response.job.JobResponse;
 import vn.localhelp.core.service.JobService;
 import vn.localhelp.core.util.FirebaseUtil;
 import vn.localhelp.core.util.annotation.ApiMessage;
+import vn.localhelp.core.util.constant.JobStatus;
 
 @RestController
 @RequestMapping("/api/jobs")
@@ -35,5 +37,14 @@ public class JobController {
       @RequestParam(defaultValue = "10") int pageSize
   ){
     return ResponseEntity.ok(jobService.getOpenJob(current, pageSize));
+  }
+
+  @GetMapping("/my-jobs")
+  @ApiMessage("Fetch my jobs successfully")
+  public ResponseEntity<List<JobResponse>> getMyJobs(
+      @RequestParam(required = false) JobStatus status
+  ){
+    List<JobResponse> jobs = jobService.getMyJobs(status);
+    return ResponseEntity.ok(jobs);
   }
 }

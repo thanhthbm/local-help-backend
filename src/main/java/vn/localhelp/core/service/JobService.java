@@ -9,6 +9,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import vn.localhelp.core.domain.entity.Category;
 import vn.localhelp.core.domain.entity.Job;
@@ -23,6 +25,7 @@ import vn.localhelp.core.repository.JobRepository;
 import vn.localhelp.core.repository.UserRepository;
 import vn.localhelp.core.util.constant.ImageType;
 import vn.localhelp.core.util.constant.JobStatus;
+import vn.localhelp.core.util.specification.JobSpecification;
 
 @Service
 @RequiredArgsConstructor
@@ -82,5 +85,20 @@ public class JobService {
         .meta(meta)
         .result(listJobResponse)
         .build();
+  }
+
+  public List<JobResponse> getMyJobs(JobStatus jobStatus){
+    String uid = SecurityContextHolder.getContext().getAuthentication().getName();
+    User currentUser = userRepository.findByFirebaseUid(uid)
+        .orElseThrow(() -> new RuntimeException("User not found"));
+
+    Specification<Job> specification = Specification.allOf(
+        JobSpecification.hasCreatorId(currentUser.getId()),
+        JobSpecification.hasJobStatus(jobStatus)
+    );
+
+    List<Job> jobs = jobRepository.findAll(specification, Sort.by(Sort.Direction.DESC, "createdAt"));
+
+    return jobs.stream().map(jobMapper::toResponse).collect(Collectors.toList());
   }
 }

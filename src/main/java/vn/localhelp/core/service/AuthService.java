@@ -39,8 +39,6 @@ public class AuthService {
             .build());
 
     user.setEmail(firebaseUser.getEmail());
-    user.setFullName(firebaseUser.getDisplayName());
-    user.setAvatarUrl(firebaseUser.getPhotoUrl());
     user.setPhone(firebaseUser.getPhoneNumber());
 
     User savedUser = userRepository.save(user);
