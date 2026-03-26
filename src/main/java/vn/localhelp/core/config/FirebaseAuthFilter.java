@@ -9,6 +9,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+
+import jakarta.validation.constraints.Null;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -20,7 +22,10 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import vn.localhelp.core.domain.entity.User;
 import vn.localhelp.core.repository.UserRepository;
 import vn.localhelp.core.util.NotFoundException;
+import lombok.extern.slf4j.Slf4j;
+import vn.localhelp.core.util.constant.UserRole;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class FirebaseAuthFilter extends OncePerRequestFilter {
@@ -33,6 +38,7 @@ public class FirebaseAuthFilter extends OncePerRequestFilter {
 
     if (header != null && header.startsWith("Bearer ")) {
       String token = header.substring(7);
+      log.info("Bearer Token: {}", token);
 
       try{
         FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(token);
@@ -40,9 +46,10 @@ public class FirebaseAuthFilter extends OncePerRequestFilter {
 
         String uid = decodedToken.getUid();
         String email = decodedToken.getEmail();
+        log.info("uid: {}, email: {}", uid, email);
 
         User user = userRepository.findByFirebaseUid(uid)
-            .orElseThrow(() -> new NotFoundException("User not found in local database"));
+            .orElseGet(() -> User.builder().role(UserRole.USER).build());
 
         String role = user.getRole().name();
         List<GrantedAuthority> authorities = new ArrayList<>();

@@ -12,7 +12,9 @@ import vn.localhelp.core.domain.response.user.UserResponse;
 import vn.localhelp.core.repository.UserRepository;
 import vn.localhelp.core.util.constant.UserRole;
 import vn.localhelp.core.util.constant.UserStatus;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -22,10 +24,10 @@ public class AuthService {
   @Transactional
   public UserResponse syncUserFromFirebase(String uid){
     UserRecord firebaseUser;
+    log.info("firebase user id is {}", uid);
 
     try {
       firebaseUser = FirebaseAuth.getInstance().getUser(uid);
-
     } catch (FirebaseAuthException e) {
       throw new RuntimeException("Lỗi kết nối Firebase", e);
     }
@@ -40,6 +42,7 @@ public class AuthService {
 
     user.setEmail(firebaseUser.getEmail());
     user.setPhone(firebaseUser.getPhoneNumber());
+    log.debug(user.toString());
 
     User savedUser = userRepository.save(user);
     return userMapper.toResponse(savedUser);

@@ -1,5 +1,6 @@
 package vn.localhelp.core.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -9,7 +10,9 @@ import org.springframework.web.bind.annotation.RestController;
 import vn.localhelp.core.domain.response.user.UserResponse;
 import vn.localhelp.core.service.AuthService;
 import vn.localhelp.core.util.annotation.ApiMessage;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
