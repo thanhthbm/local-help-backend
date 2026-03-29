@@ -6,7 +6,6 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 import vn.localhelp.core.domain.response.common.RestResponse;
-import vn.localhelp.core.util.NotFoundException;
 
 @RestControllerAdvice
 public class GlobalException {

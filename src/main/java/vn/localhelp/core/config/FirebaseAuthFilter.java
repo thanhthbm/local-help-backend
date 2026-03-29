@@ -13,7 +13,6 @@ import java.util.List;
 import jakarta.validation.constraints.Null;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -21,7 +20,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import vn.localhelp.core.domain.entity.User;
 import vn.localhelp.core.repository.UserRepository;
-import vn.localhelp.core.util.NotFoundException;
+import vn.localhelp.core.util.error.NotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import vn.localhelp.core.util.constant.UserRole;
 

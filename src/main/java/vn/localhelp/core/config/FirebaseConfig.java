@@ -1,26 +1,35 @@
 package vn.localhelp.core.config;
 
+
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
 import jakarta.annotation.PostConstruct;
 import java.io.FileInputStream;
 import java.io.IOException;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class FirebaseConfig {
 
+  @Value("${firebase.credential.path}")
+  private String credentialPath;
+
   @PostConstruct
   public void init() throws IOException {
+    if (credentialPath == null || credentialPath.trim().isEmpty()) {
+      throw new IllegalArgumentException("Đường dẫn file Firebase JSON bị null hoặc trống!");
+    }
 
-    FileInputStream serviceAccount =
-        new FileInputStream("local-help-backend-firebase-adminsdk-fbsvc-eb774c0da9.json");
+    FileInputStream serviceAccount = new FileInputStream(credentialPath);
 
     FirebaseOptions options = FirebaseOptions.builder()
         .setCredentials(GoogleCredentials.fromStream(serviceAccount))
         .build();
 
-    FirebaseApp.initializeApp(options);
+    if (FirebaseApp.getApps().isEmpty()) {
+      FirebaseApp.initializeApp(options);
+    }
   }
 }

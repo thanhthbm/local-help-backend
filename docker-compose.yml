@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: localhelp_mysql
+    restart: always
+    environment:
+      MYSQL_DATABASE: local_help_db
+      MYSQL_ROOT_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+      MYSQL_ROOT_HOST: "%"
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: localhelp_redis
+    restart: always
+    ports:
+      - "6379:6379"
+
+  backend:
+    build: .
+    container_name: localhelp_backend
+    restart: always
+    ports:
+      - "3636:3636"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+    env_file:
+      - .env
+    volumes:
+      - ./env/local-help-backend-firebase-adminsdk-fbsvc-eb774c0da9.json:/app/env/local-help-backend-firebase-adminsdk-fbsvc-eb774c0da9.json:ro
+
+volumes:
+  mysql_data:

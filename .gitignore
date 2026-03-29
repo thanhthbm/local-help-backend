@@ -35,3 +35,4 @@ build/
 firebase-adminsdk*.json
 
 .env
+env/

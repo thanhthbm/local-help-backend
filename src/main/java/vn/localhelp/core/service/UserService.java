@@ -8,7 +8,7 @@ import vn.localhelp.core.domain.response.user.UserResponse;
 import vn.localhelp.core.repository.JobRepository;
 import vn.localhelp.core.repository.ReviewRepository;
 import vn.localhelp.core.repository.UserRepository;
-import vn.localhelp.core.util.NotFoundException;
+import vn.localhelp.core.util.error.NotFoundException;
 import vn.localhelp.core.util.constant.JobStatus;
 
 @Service

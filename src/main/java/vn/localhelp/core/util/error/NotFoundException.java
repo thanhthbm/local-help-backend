@@ -1,4 +1,4 @@
-package vn.localhelp.core.util;
+package vn.localhelp.core.util.error;
 
 public class NotFoundException extends RuntimeException {
 
