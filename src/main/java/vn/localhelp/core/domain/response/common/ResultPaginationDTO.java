@@ -9,9 +9,9 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class ResultPaginationDTO {
+public class ResultPaginationDTO<T> {
   private Meta meta;
-  private Object result;
+  private T result;
 
   @Data
   @Builder

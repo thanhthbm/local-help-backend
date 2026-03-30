@@ -23,6 +23,7 @@ import vn.localhelp.core.domain.response.job.JobResponse;
 import vn.localhelp.core.repository.CategoryRepository;
 import vn.localhelp.core.repository.JobRepository;
 import vn.localhelp.core.repository.UserRepository;
+import vn.localhelp.core.util.FirebaseUtil;
 import vn.localhelp.core.util.constant.ImageType;
 import vn.localhelp.core.util.constant.JobStatus;
 import vn.localhelp.core.util.specification.JobSpecification;
@@ -34,6 +35,7 @@ public class JobService {
   private final UserRepository userRepository;
   private final CategoryRepository categoryRepository;
   private final JobMapper jobMapper;
+
 
   @Transactional
   public JobResponse createJob(String currentFirebaseUid, CreateJobRequest createJobRequest) {
@@ -66,10 +68,10 @@ public class JobService {
     return jobMapper.toResponse(savedJob);
   }
 
-  public ResultPaginationDTO getOpenJob(int page, int size){
+  public ResultPaginationDTO<List<JobResponse>> getOpenJob(int page, int size){
     Pageable pageable = PageRequest.of(page - 1, size, Sort.by("createdAt").descending());
-
-    Page<Job> pageJob = jobRepository.findByJobStatus(JobStatus.OPEN, pageable);
+    String currentUid = FirebaseUtil.getCurrentUserUid();
+    Page<Job> pageJob = jobRepository.findByJobStatus(JobStatus.OPEN, currentUid, pageable);
 
     List<JobResponse> listJobResponse = pageJob.getContent().stream()
         .map(jobMapper::toResponse)
@@ -81,10 +83,11 @@ public class JobService {
     meta.setPages(pageJob.getTotalPages());
     meta.setTotal(pageJob.getTotalElements());
 
-    return ResultPaginationDTO.builder()
-        .meta(meta)
-        .result(listJobResponse)
-        .build();
+    ResultPaginationDTO<List<JobResponse>> result = new ResultPaginationDTO<>();
+    result.setMeta(meta);
+    result.setResult(listJobResponse);
+
+    return result;
   }
 
   public List<JobResponse> getMyJobs(JobStatus jobStatus){

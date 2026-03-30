@@ -41,7 +41,7 @@ public class JobController {
 
   @ApiMessage("Fetch open jobs successfully")
   @GetMapping
-  public ResponseEntity<ResultPaginationDTO> getOpenJobs(
+  public ResponseEntity<ResultPaginationDTO<List<JobResponse>>> getOpenJobs(
       @RequestParam(defaultValue = "1") int current,
       @RequestParam(defaultValue = "10") int pageSize
   ){

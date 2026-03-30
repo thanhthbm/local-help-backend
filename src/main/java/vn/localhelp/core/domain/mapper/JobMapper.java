@@ -25,6 +25,7 @@ public interface JobMapper {
   @Mapping(source = "category.name", target = "categoryName")
   @Mapping(source = "category.iconUrl", target = "categoryIcon")
   @Mapping(source = "creator.fullName", target = "creatorName")
+  @Mapping(source = "creator.id", target = "creatorId")
   @Mapping(source = "creator.avatarUrl", target = "creatorAvatar")
   @Mapping(source = "creator.reputationScore", target = "creatorRating")
   JobResponse toResponse(Job job);
