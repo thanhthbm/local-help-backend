@@ -104,4 +104,11 @@ public class JobService {
 
     return jobs.stream().map(jobMapper::toResponse).collect(Collectors.toList());
   }
+
+  public JobResponse getJobById(Long id) {
+    Job job = jobRepository.findById(id)
+        .orElseThrow(() -> new RuntimeException("Job not found"));
+
+    return jobMapper.toResponse(job);
+  }
 }

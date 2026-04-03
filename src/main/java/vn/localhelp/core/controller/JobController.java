@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -112,5 +113,11 @@ public class JobController {
       List<Job> jobs = List.of(job1, job2);
 
       return ResponseEntity.ok(jobs.stream().map(jobMapper::toResponse).collect(Collectors.toList()));
+  }
+
+  @GetMapping("/{id}")
+  @ApiMessage("Get job by id")
+  public ResponseEntity<JobResponse> getJobById(@PathVariable Long id){
+      return ResponseEntity.ok(jobService.getJobById(id));
   }
 }

@@ -21,7 +21,7 @@ public class JobResponse {
   private String categoryName;
   private String categoryIcon;
   private String creatorName;
-  private String creatorId;
+  private Long creatorId;
   private String creatorAvatar;
   private Double creatorRating;
   private List<String> images;
