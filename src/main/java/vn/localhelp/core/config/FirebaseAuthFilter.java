@@ -20,7 +20,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import vn.localhelp.core.domain.entity.User;
 import vn.localhelp.core.repository.UserRepository;
-import vn.localhelp.core.util.error.NotFoundException;
+//import vn.localhelp.core.util.error.NotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import vn.localhelp.core.util.constant.UserRole;
 
