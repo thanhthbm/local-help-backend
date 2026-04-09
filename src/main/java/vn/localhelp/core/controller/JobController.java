@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -120,4 +121,17 @@ public class JobController {
   public ResponseEntity<JobResponse> getJobById(@PathVariable Long id){
       return ResponseEntity.ok(jobService.getJobById(id));
   }
+  @GetMapping("/jobs-completed")
+  @ApiMessage("Lấy số lượng công việc đã hoàn thành thành công")
+  public ResponseEntity<Long> countCompletedJobs() {
+        long count = jobService.countCompletedJobs();
+        return ResponseEntity.ok(count);
+  }
+  @GetMapping("/admin/all")
+  @PreAuthorize("hasRole('ADMIN')")
+  @ApiMessage("Lấy danh sách tất cả công việc cho Admin thành công")
+  public ResponseEntity<ResultPaginationDTO<List<JobResponse>>> getAllJobsForAdmin(
+            @RequestParam(defaultValue = "1") int current,
+            @RequestParam(defaultValue = "10") int pageSize
+  ){return ResponseEntity.ok(jobService.getAllJobsForAdmin(current, pageSize));}
 }

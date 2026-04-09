@@ -8,9 +8,17 @@ import vn.localhelp.core.domain.response.user.UserResponse;
 import vn.localhelp.core.repository.JobRepository;
 import vn.localhelp.core.repository.ReviewRepository;
 import vn.localhelp.core.repository.UserRepository;
+import vn.localhelp.core.util.constant.UserRole;
 import vn.localhelp.core.util.error.NotFoundException;
 import vn.localhelp.core.util.constant.JobStatus;
-
+import jakarta.transaction.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import java.util.List;
+import vn.localhelp.core.domain.response.common.ResultPaginationDTO;
+import vn.localhelp.core.util.constant.UserStatus;
 @Service
 @RequiredArgsConstructor
 public class UserService {
@@ -32,5 +40,39 @@ public class UserService {
     double responseRate = 0.98; // phake
 
     return userMapper.toResponseWithStats(user, completedJobs, totalReviews, finalAvgRating, responseRate);
+  }
+  public long countTotalUsers() {
+    return userRepository.countByRole(UserRole.USER);
+  }
+  public ResultPaginationDTO<List<UserResponse>> getAllUsersForAdmin(int page, int size) {
+    Pageable pageable = PageRequest.of(page - 1, size, Sort.by("createdAt").descending());
+
+    Page<User> pageUser = userRepository.findAll(pageable);
+
+    List<UserResponse> listUserResponse = pageUser.getContent().stream()
+            .map(userMapper::toResponse)
+            .toList();
+
+    ResultPaginationDTO.Meta meta = new ResultPaginationDTO.Meta();
+    meta.setPage(page);
+    meta.setSize(size);
+    meta.setPages(pageUser.getTotalPages());
+    meta.setTotal(pageUser.getTotalElements());
+
+    ResultPaginationDTO<List<UserResponse>> result = new ResultPaginationDTO<>();
+    result.setMeta(meta);
+    result.setResult(listUserResponse);
+
+    return result;
+  }
+  @Transactional
+  public UserResponse updateUserStatus(Long userId, UserStatus newStatus) {
+    User user = userRepository.findById(userId)
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng với ID: " + userId));
+
+    user.setStatus(newStatus);
+    User updatedUser = userRepository.save(user);
+
+    return userMapper.toResponse(updatedUser);
   }
 }

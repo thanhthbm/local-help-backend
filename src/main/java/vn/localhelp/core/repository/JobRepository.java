@@ -16,4 +16,5 @@ public interface JobRepository extends JpaRepository<Job, Long>, JpaSpecificatio
       + "WHERE j.jobStatus = :status "
       + "AND j.creator.firebaseUid != :currentUid")
   Page<Job> findByJobStatus(@Param("status") JobStatus status, String currentUid, Pageable pageable);
+  long countByJobStatus(JobStatus status);
 }
