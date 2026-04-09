@@ -111,4 +111,24 @@ public class JobService {
 
     return jobMapper.toResponse(job);
   }
+  public long countCompletedJobs() {
+    return jobRepository.countByJobStatus(JobStatus.COMPLETED);
+  }
+  public ResultPaginationDTO<List<JobResponse>> getAllJobsForAdmin(int page, int size) {
+    Pageable pageable = PageRequest.of(page - 1, size, Sort.by("createdAt").descending());
+    Page<Job> pageJob = jobRepository.findAll(pageable);
+    List<JobResponse> listJobResponse = pageJob.getContent().stream()
+            .map(jobMapper::toResponse)
+            .toList();
+    ResultPaginationDTO.Meta meta = new ResultPaginationDTO.Meta();
+    meta.setPage(page);
+    meta.setSize(size);
+    meta.setPages(pageJob.getTotalPages());
+    meta.setTotal(pageJob.getTotalElements());
+    ResultPaginationDTO<List<JobResponse>> result = new ResultPaginationDTO<>();
+    result.setMeta(meta);
+    result.setResult(listJobResponse);
+
+    return result;
+  }
 }
