@@ -43,7 +43,7 @@ jobs:
           username: ubuntu
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd /app
+            cd /home/ubuntu/app
 
             echo "${{ secrets.GITHUB_TOKEN }}" | \
               docker login ghcr.io \
