@@ -21,6 +21,7 @@ public interface JobMapper {
   @Mapping(target = "jobImages", ignore = true)
   Job toEntity(CreateJobRequest createJobRequest);
 
+  @Mapping(source = "jobStatus", target = "status")
   @Mapping(source = "jobImages", target = "images", qualifiedByName = "mapJobImagesToStrings")
   @Mapping(source = "category.name", target = "categoryName")
   @Mapping(source = "category.iconUrl", target = "categoryIcon")
