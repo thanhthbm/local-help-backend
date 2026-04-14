@@ -32,6 +32,7 @@ public class SecurityConfiguration {
         .authorizeHttpRequests(auth -> auth
             .requestMatchers("/icons/**", "/images/**").permitAll()
             .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
+            .requestMatchers("/api/users/me").permitAll()
             .anyRequest().authenticated()
         )
         .addFilterBefore(
