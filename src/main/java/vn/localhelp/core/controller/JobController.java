@@ -63,9 +63,12 @@ public class JobController {
   @GetMapping
   public ResponseEntity<ResultPaginationDTO<List<JobResponse>>> getOpenJobs(
       @RequestParam(defaultValue = "1") int current,
-      @RequestParam(defaultValue = "10") int pageSize
+      @RequestParam(defaultValue = "10") int pageSize,
+      @RequestParam(required = false) Long categoryId,
+      @RequestParam(required = false) Double lat,
+      @RequestParam(required = false) Double lng
   ){
-    return ResponseEntity.ok(jobService.getOpenJob(current, pageSize));
+    return ResponseEntity.ok(jobService.getOpenJob(current, pageSize, categoryId, lat, lng));
   }
 
   @GetMapping("/my-jobs")
@@ -79,10 +82,12 @@ public class JobController {
 
   @GetMapping("/search")
   @ApiMessage("Search jobs successfully")
-  public ResponseEntity<List<JobResponse>> searchJobByKeyword(
-          @RequestParam String keyword
+  public ResponseEntity<ResultPaginationDTO<List<JobResponse>>> searchJobByKeyword(
+          @RequestParam String keyword,
+          @RequestParam(defaultValue = "1") int current,
+          @RequestParam(defaultValue = "10") int pageSize
   ){
-      return ResponseEntity.ok(jobService.searchJobs(keyword));
+      return ResponseEntity.ok(jobService.searchJobs(keyword, current, pageSize));
   }
 
   @GetMapping("/{id}")
@@ -103,4 +108,10 @@ public class JobController {
             @RequestParam(defaultValue = "1") int current,
             @RequestParam(defaultValue = "10") int pageSize
   ){return ResponseEntity.ok(jobService.getAllJobsForAdmin(current, pageSize));}
+
+  @GetMapping("/featured")
+  @ApiMessage("Fetch featured jobs successfully")
+  public ResponseEntity<List<JobResponse>> getFeaturedJobs() {
+    return ResponseEntity.ok(jobService.getFeaturedJobs());
+  }
 }
