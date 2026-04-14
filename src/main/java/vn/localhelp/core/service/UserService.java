@@ -29,7 +29,7 @@ public class UserService {
   private final UserMapper userMapper;
   private final JobRepository jobRepository;
   private final ReviewRepository reviewRepository;
-  private final FirebaseStorageService firebaseStorageService;
+  private final CloudinaryService cloudinaryService;
 
   public UserResponse getMyProfile(String firebaseUid) {
     User user = userRepository.findByFirebaseUid(firebaseUid)
@@ -62,11 +62,15 @@ public class UserService {
     // Upload avatar nếu có
     if (avatarFile != null && !avatarFile.isEmpty()) {
       try {
-        String avatarUrl = firebaseStorageService.uploadFile(avatarFile, "avatars");
+        String avatarUrl = cloudinaryService.uploadImage(avatarFile);
         user.setAvatarUrl(avatarUrl);
       } catch (Exception e) {
         throw new RuntimeException("Không thể tải lên ảnh đại diện: " + e.getMessage(), e);
       }
+    }
+
+    if (Boolean.FALSE.equals(user.getIsNew())) {
+      user.setIsNew(true);
     }
 
     User saved = userRepository.save(user);

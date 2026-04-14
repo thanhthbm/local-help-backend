@@ -24,6 +24,7 @@ public class UserResponse {
   private UserStatus status;
   private GenderEnum gender;
   private String bio;
+  private Boolean isNew;
   private int completedJobs;
   private int totalReviews;
   private double averageRating;

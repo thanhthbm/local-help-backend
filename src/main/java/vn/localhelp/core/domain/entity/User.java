@@ -80,6 +80,10 @@ public class User {
   @Column(columnDefinition = "TEXT")
   private String bio;
 
+  @Builder.Default
+  @Column(name = "is_new")
+  private Boolean isNew = false;
+
   @CreatedDate
   @Column(name = "created_at", nullable = false, updatable = false)
   private LocalDateTime createdAt;
@@ -87,6 +91,5 @@ public class User {
   @LastModifiedDate
   @Column(name = "updated_at")
   private LocalDateTime updatedAt;
-
 
 }
