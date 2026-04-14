@@ -59,10 +59,10 @@ public class JobService {
       List<JobImage> images = createJobRequest.getImageUrls().stream()
           .map(url -> JobImage.builder()
               .imageUrl(url)
-              .imageType(ImageType.REQUEST)
+              .imageType(vn.localhelp.core.util.constant.ImageType.REQUEST)
               .job(job)
               .build())
-          .toList();
+          .collect(Collectors.toList());
       job.setJobImages(images);
     }
 
@@ -267,14 +267,18 @@ public class JobService {
   }
 
   private void replaceJobImages(Job job, List<String> imageUrls) {
-    List<JobImage> images = new ArrayList<>();
+    if (job.getJobImages() == null) {
+      job.setJobImages(new ArrayList<>());
+    } else {
+      job.getJobImages().clear();
+    }
+    
     for (String url : imageUrls) {
-      images.add(JobImage.builder()
+      job.getJobImages().add(JobImage.builder()
           .imageUrl(url)
-          .imageType(ImageType.REQUEST)
+          .imageType(vn.localhelp.core.util.constant.ImageType.REQUEST)
           .job(job)
           .build());
     }
-    job.setJobImages(images);
   }
 }

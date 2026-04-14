@@ -3,6 +3,7 @@ package vn.localhelp.core.config;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -31,9 +32,9 @@ public class SecurityConfiguration {
         )
         .authorizeHttpRequests(auth -> auth
             .requestMatchers("/icons/**", "/images/**").permitAll()
-            .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
+            .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
             .requestMatchers("/api/users/me").permitAll()
-            .requestMatchers("/api/jobs/**").permitAll()
+            .requestMatchers(HttpMethod.GET, "/api/jobs/**").permitAll()
             .anyRequest().authenticated()
         )
         .addFilterBefore(
