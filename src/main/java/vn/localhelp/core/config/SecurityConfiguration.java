@@ -33,7 +33,7 @@ public class SecurityConfiguration {
             .requestMatchers("/icons/**", "/images/**").permitAll()
             .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
             .requestMatchers("/api/users/me").permitAll()
-            .requestMatchers("/api/jobs/").permitAll()
+            .requestMatchers("/api/jobs/**").permitAll()
             .anyRequest().authenticated()
         )
         .addFilterBefore(
