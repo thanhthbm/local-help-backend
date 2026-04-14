@@ -1,9 +1,12 @@
 package vn.localhelp.core.controller;
 
 import java.util.List;
+
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -13,10 +16,15 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import vn.localhelp.core.domain.entity.User;
 import vn.localhelp.core.domain.request.job.CreateJobRequest;
+import vn.localhelp.core.domain.request.job.SearchJobRequest;
 import vn.localhelp.core.domain.response.common.ResultPaginationDTO;
 import vn.localhelp.core.domain.response.job.JobResponse;
+import vn.localhelp.core.service.JobApplicationService;
 import vn.localhelp.core.service.JobService;
+import vn.localhelp.core.util.CustomUserDetails;
 import vn.localhelp.core.util.FirebaseUtil;
 import vn.localhelp.core.util.annotation.ApiMessage;
 import vn.localhelp.core.util.constant.JobStatus;
@@ -26,6 +34,7 @@ import vn.localhelp.core.util.constant.JobStatus;
 @RequiredArgsConstructor
 public class JobController {
   private final JobService jobService;
+  private final JobApplicationService jobApplicationService;
 
   @PostMapping
   @ApiMessage("Create a new job successfully")
@@ -79,15 +88,15 @@ public class JobController {
     List<JobResponse> jobs = jobService.getMyJobs(status);
     return ResponseEntity.ok(jobs);
   }
-
-  @GetMapping("/search")
-  @ApiMessage("Search jobs successfully")
-  public ResponseEntity<ResultPaginationDTO<List<JobResponse>>> searchJobByKeyword(
-          @RequestParam String keyword,
-          @RequestParam(defaultValue = "1") int current,
-          @RequestParam(defaultValue = "10") int pageSize
-  ){
-      return ResponseEntity.ok(jobService.searchJobs(keyword, current, pageSize));
+  @PostMapping("/search")
+  @ApiMessage("search")
+  public ResponseEntity<ResultPaginationDTO<List<JobResponse>>> searchJobs(
+          @Valid
+          @RequestBody SearchJobRequest request,
+          @AuthenticationPrincipal CustomUserDetails currentUser) {
+      request.setUserId(currentUser.getUserEntity().getId());
+      ResultPaginationDTO<List<JobResponse>> results = jobService.searchJobs(request);
+      return ResponseEntity.ok(results);
   }
 
   @GetMapping("/{id}")
@@ -95,12 +104,14 @@ public class JobController {
   public ResponseEntity<JobResponse> getJobById(@PathVariable Long id){
       return ResponseEntity.ok(jobService.getJobById(id));
   }
+
   @GetMapping("/jobs-completed")
   @ApiMessage("Lấy số lượng công việc đã hoàn thành thành công")
   public ResponseEntity<Long> countCompletedJobs() {
         long count = jobService.countCompletedJobs();
         return ResponseEntity.ok(count);
   }
+
   @GetMapping("/admin/all")
   @PreAuthorize("hasRole('ADMIN')")
   @ApiMessage("Lấy danh sách tất cả công việc cho Admin thành công")
@@ -113,5 +124,14 @@ public class JobController {
   @ApiMessage("Fetch featured jobs successfully")
   public ResponseEntity<List<JobResponse>> getFeaturedJobs() {
     return ResponseEntity.ok(jobService.getFeaturedJobs());
+  }
+
+  @PostMapping("/{jobId}/apply")
+  @ApiMessage("Gửi yêu cầu nhận việc thành công")
+  public void applyForJob(
+          @PathVariable Long jobId,
+          @AuthenticationPrincipal CustomUserDetails currentUser) {
+      User currUser = currentUser.getUserEntity();
+      jobApplicationService.applyForJob(jobId, currUser.getId());
   }
 }

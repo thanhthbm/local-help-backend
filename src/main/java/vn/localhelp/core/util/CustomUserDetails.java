@@ -1,0 +1,17 @@
+package vn.localhelp.core.util;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import vn.localhelp.core.domain.entity.User;
+
+@Getter
+@AllArgsConstructor
+public class CustomUserDetails {
+    private String firebaseUid;
+    private User userEntity;
+
+    @Override
+    public String toString(){
+        return firebaseUid;
+    }
+}

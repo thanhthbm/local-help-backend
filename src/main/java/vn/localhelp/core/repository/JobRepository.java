@@ -9,6 +9,9 @@ import org.springframework.data.repository.query.Param;
 import vn.localhelp.core.domain.entity.Job;
 import vn.localhelp.core.util.constant.JobStatus;
 
+import java.time.LocalDateTime;
+import java.util.List;
+
 public interface JobRepository extends JpaRepository<Job, Long>, JpaSpecificationExecutor<Job> {
   long countByHelperIdAndJobStatus(Long helperId, JobStatus status);
 
@@ -17,4 +20,42 @@ public interface JobRepository extends JpaRepository<Job, Long>, JpaSpecificatio
       + "AND j.creator.firebaseUid != :currentUid")
   Page<Job> findByJobStatus(@Param("status") JobStatus status, String currentUid, Pageable pageable);
   long countByJobStatus(JobStatus status);
+
+  @Query(value = "SELECT * FROM jobs j WHERE " +
+                   "j.job_status = 'OPEN' " +
+                   "AND j.creator_id != :userId " +
+                   "AND j.price >= :minPrice " +
+                   "AND (:hasCategory = 0 OR j.category_id IN (:categoryIds)) " +
+                   "AND (:startTime IS NULL OR j.created_at >= :startTime) " +
+                   "AND (:endTime IS NULL OR j.created_at <= :endTime) " +
+                   "AND (j.title LIKE CONCAT('%', :keyword, '%') " +
+                   "OR j.description LIKE CONCAT('%', :keyword, '%')) " +
+
+                   "AND ST_Distance_Sphere(POINT(j.longitude, j.latitude), POINT(:userLng, :userLat)) <= (:maxDistance * 1000) " +
+                   "ORDER BY ST_Distance_Sphere(POINT(j.longitude, j.latitude), POINT(:userLng, :userLat)) ASC",
+            countQuery = "SELECT count(*) FROM jobs j WHERE " +
+                    "j.job_status = 'OPEN' " +
+                    "AND j.creator_id != :userId " +
+                    "AND j.price >= :minPrice " +
+                    "AND (:hasCategory = 0 OR j.category_id IN (:categoryIds)) " +
+                    "AND (:startTime IS NULL OR j.created_at >= :startTime) " +
+                    "AND (:endTime IS NULL OR j.created_at <= :endTime) " +
+                    "AND (j.title LIKE CONCAT('%', :keyword, '%') " +
+                    "OR j.description LIKE CONCAT('%', :keyword, '%')) " +
+                    "AND ST_Distance_Sphere(POINT(j.longitude, j.latitude), POINT(:userLng, :userLat)) <= (:maxDistance * 1000) ",
+            nativeQuery = true)
+  Page<Job> searchJobsNearby(
+            @Param("userId") Long userId,
+            @Param("userLat") Double userLat,
+            @Param("userLng") Double userLng,
+            @Param("maxDistance") Double maxDistance,
+            @Param("minPrice") Double minPrice,
+            @Param("hasCategory") Boolean hasCategory,
+            @Param("categoryIds") List<Long> categoryIds,
+            @Param("startTime") LocalDateTime startTime,
+            @Param("endTime") LocalDateTime endTime,
+            @Param("keyword") String keyword,
+            Pageable pageable
+  );
+
 }

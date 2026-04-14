@@ -3,7 +3,6 @@ package vn.localhelp.core.service;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -22,14 +21,18 @@ import vn.localhelp.core.repository.CategoryRepository;
 import vn.localhelp.core.repository.JobRepository;
 import vn.localhelp.core.repository.UserRepository;
 import vn.localhelp.core.domain.request.job.CreateJobRequest;
+import vn.localhelp.core.domain.request.job.SearchJobRequest;
 import vn.localhelp.core.domain.response.common.ResultPaginationDTO;
 import vn.localhelp.core.domain.response.job.JobResponse;
 import vn.localhelp.core.specification.JobSpecification;
 import vn.localhelp.core.util.DistanceUtil;
 import vn.localhelp.core.util.FirebaseUtil;
-import vn.localhelp.core.util.constant.ImageType;
+import vn.localhelp.core.util.constant.ErrorCode;
 import vn.localhelp.core.util.constant.JobStatus;
+import vn.localhelp.core.util.error.AppException;
 import vn.localhelp.core.util.error.NotFoundException;
+
+import static java.util.stream.Collectors.toList;
 
 @Service
 @RequiredArgsConstructor
@@ -38,7 +41,6 @@ public class JobService {
   private final UserRepository userRepository;
   private final CategoryRepository categoryRepository;
   private final JobMapper jobMapper;
-
 
   @Transactional
   public JobResponse createJob(String currentFirebaseUid, CreateJobRequest createJobRequest) {
@@ -62,7 +64,7 @@ public class JobService {
               .imageType(vn.localhelp.core.util.constant.ImageType.REQUEST)
               .job(job)
               .build())
-          .collect(Collectors.toList());
+          .collect(toList());
       job.setJobImages(images);
     }
 
@@ -213,7 +215,7 @@ public class JobService {
 
     List<Job> jobs = jobRepository.findAll(specification, Sort.by(Sort.Direction.DESC, "createdAt"));
 
-    return jobs.stream().map(jobMapper::toResponse).collect(Collectors.toList());
+    return jobs.stream().map(jobMapper::toResponse).collect(toList());
   }
 
   public JobResponse getJobById(Long id) {
@@ -242,6 +244,43 @@ public class JobService {
     return result;
   }
 
+  public ResultPaginationDTO<List<JobResponse>> searchJobs(SearchJobRequest req) {
+
+        if (req.getLatitude() == null || req.getLongitude() == null || req.getMaxDistance() == null) {
+            throw new AppException(ErrorCode.INVALID_PARAM);
+        }
+        Boolean hasCategory = !req.getCategoryIds().isEmpty();
+        Pageable pageable = PageRequest.of(req.getPage(), req.getSize());
+
+        Page<Job> jobPage = jobRepository.searchJobsNearby(
+              req.getUserId(),
+              req.getLatitude(),
+              req.getLongitude(),
+              req.getMaxDistance(),
+              req.getMinSalary(),
+              hasCategory,
+              req.getCategoryIds(),
+              req.getStartTime(),
+              req.getEndTime(),
+              req.getKeyword(),
+              pageable
+        );
+        List<JobResponse> dtoJobList = jobPage.getContent().stream()
+                                        .map(jobMapper::toResponse)
+                                        .toList();
+
+      ResultPaginationDTO.Meta meta = new ResultPaginationDTO.Meta();
+      meta.setPage(req.getPage());
+      meta.setSize(req.getSize());
+      meta.setPages(jobPage.getTotalPages());
+      meta.setTotal(jobPage.getTotalElements());
+
+      ResultPaginationDTO<List<JobResponse>> result = new ResultPaginationDTO<>();
+      result.setMeta(meta);
+      result.setResult(dtoJobList);
+      return result;
+    }
+
   public List<JobResponse> getFeaturedJobs() {
     String currentUid = FirebaseUtil.getCurrentUserUid();
     Specification<Job> specification = Specification.allOf(
@@ -252,7 +291,7 @@ public class JobService {
     Page<Job> pageJob = jobRepository.findAll(specification, pageable);
     return pageJob.getContent().stream()
         .map(jobMapper::toResponse)
-        .collect(Collectors.toList());
+        .collect(toList());
   }
 
   private Job getJobOrThrow(Long id) {
@@ -272,7 +311,7 @@ public class JobService {
     } else {
       job.getJobImages().clear();
     }
-    
+
     for (String url : imageUrls) {
       job.getJobImages().add(JobImage.builder()
           .imageUrl(url)

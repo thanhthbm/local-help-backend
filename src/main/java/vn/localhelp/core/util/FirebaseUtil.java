@@ -24,6 +24,12 @@ public class FirebaseUtil {
       throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Login required");
     }
 
+      Object principal = authentication.getPrincipal();
+
+      if (principal instanceof CustomUserDetails) {
+          return ((CustomUserDetails) principal).getFirebaseUid();
+      }
+
     return authentication.getName(); // Đây chính là UID từ FirebaseTokenFilter nạp vào
   }
 }

@@ -20,6 +20,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import vn.localhelp.core.domain.entity.User;
 import vn.localhelp.core.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
+import vn.localhelp.core.util.CustomUserDetails;
 import vn.localhelp.core.util.constant.UserRole;
 
 @Slf4j
@@ -57,8 +58,10 @@ public class FirebaseAuthFilter extends OncePerRequestFilter {
         List<GrantedAuthority> authorities = new ArrayList<>();
         authorities.add(new SimpleGrantedAuthority("ROLE_" + roleName));
 
+        CustomUserDetails principal = new CustomUserDetails(uid, user);
+
         UsernamePasswordAuthenticationToken authentication =
-            new UsernamePasswordAuthenticationToken(uid, null, authorities);
+            new UsernamePasswordAuthenticationToken(principal, null, authorities);
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
       } catch (Exception e) {
