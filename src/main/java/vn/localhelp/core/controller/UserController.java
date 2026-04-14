@@ -30,6 +30,12 @@ public class UserController {
     return ResponseEntity.ok(userService.getMyProfile(currentUid));
   }
 
+  @GetMapping("/{id}")
+  @ApiMessage("Lấy thông tin người dùng thành công")
+  public ResponseEntity<UserResponse> getUserById(@PathVariable Long id) {
+    return ResponseEntity.ok(userService.getUserById(id));
+  }
+
   @PutMapping(value = "/me", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   @ApiMessage("Cập nhật hồ sơ thành công")
   public ResponseEntity<UserResponse> updateProfile(

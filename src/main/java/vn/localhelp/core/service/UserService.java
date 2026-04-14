@@ -48,6 +48,19 @@ public class UserService {
     return userMapper.toResponseWithStats(user, completedJobs, totalReviews, finalAvgRating, responseRate);
   }
 
+  public UserResponse getUserById(Long id) {
+    User user = userRepository.findById(id)
+        .orElseThrow(() -> new NotFoundException("User not found"));
+
+    int completedJobs = (int) jobRepository.countByHelperIdAndJobStatus(id, JobStatus.COMPLETED);
+    int totalReviews = (int) reviewRepository.countByRevieweeId(id);
+    Double avgRating = reviewRepository.getAverageRatingByRevieweeId(id);
+    double finalAvgRating = (avgRating != null) ? Math.round(avgRating * 10.0) / 10.0 : 0.0;
+    double responseRate = 0.98; // phake
+
+    return userMapper.toResponseWithStats(user, completedJobs, totalReviews, finalAvgRating, responseRate);
+  }
+
   @Transactional
   public UserResponse updateProfile(String firebaseUid, UpdateProfileRequest request, MultipartFile avatarFile) {
     User user = userRepository.findByFirebaseUid(firebaseUid)
