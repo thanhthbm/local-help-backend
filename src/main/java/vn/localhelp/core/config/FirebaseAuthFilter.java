@@ -23,7 +23,6 @@ import lombok.extern.slf4j.Slf4j;
 import vn.localhelp.core.util.constant.UserRole;
 
 @Slf4j
-@Component
 @RequiredArgsConstructor
 public class FirebaseAuthFilter extends OncePerRequestFilter {
   private final UserRepository userRepository;
@@ -33,35 +32,45 @@ public class FirebaseAuthFilter extends OncePerRequestFilter {
       FilterChain filterChain) throws ServletException, IOException {
     String header = request.getHeader("Authorization");
 
-    if (header != null && header.startsWith("Bearer ")) {
+    if (header != null && header.toLowerCase().startsWith("bearer ")) {
       String token = header.substring(7);
-      log.info("Bearer Token: {}", token);
+      log.info("Auth Token found for {} {}", request.getMethod(), request.getRequestURI());
 
       try {
         FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(token);
-
         String uid = decodedToken.getUid();
         String email = decodedToken.getEmail();
-        log.info("uid: {}, email: {}", uid, email);
+        
+        log.debug("Authenticated UID: {}", uid);
 
         User user = userRepository.findByFirebaseUid(uid)
-            .orElseGet(() -> User.builder().role(UserRole.USER).build());
+            .orElseGet(() -> {
+              log.warn("User with UID {} not found in database, creating temporary principal", uid);
+              User newUser = new User();
+              newUser.setFirebaseUid(uid);
+              newUser.setEmail(email);
+              newUser.setRole(UserRole.USER); // Ensure role is NOT null
+              return newUser;
+            });
 
-        String role = user.getRole().name();
+        String roleName = (user.getRole() != null) ? user.getRole().name() : "USER";
         List<GrantedAuthority> authorities = new ArrayList<>();
-        authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
+        authorities.add(new SimpleGrantedAuthority("ROLE_" + roleName));
 
         UsernamePasswordAuthenticationToken authentication =
-            new UsernamePasswordAuthenticationToken(uid, email, authorities);
+            new UsernamePasswordAuthenticationToken(uid, null, authorities);
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
       } catch (Exception e) {
-        log.error("Firebase token verification failed", e);
+        log.error("Firebase token verification failed for {} {}: {}", 
+            request.getMethod(), request.getRequestURI(), e.getMessage());
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-        // Add WWW-Authenticate header here as well for token expiration cases
         response.setHeader("WWW-Authenticate", "Bearer realm=\"localhelp\", error=\"invalid_token\"");
+        response.getWriter().write("{\"message\": \"Invalid or expired token\"}");
         return;
       }
+    } else {
+      log.debug("No Bearer token found for {} {}", request.getMethod(), request.getRequestURI());
     }
 
     filterChain.doFilter(request, response);

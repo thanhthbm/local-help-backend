@@ -30,10 +30,8 @@ public class SecurityConfiguration {
                 .accessDeniedHandler(customAccessDeniedHandler)
         )
         .authorizeHttpRequests(auth -> auth
-//            .requestMatchers("/public/**").permitAll()
-                .requestMatchers("/icons/**", "/images/**").permitAll()
-//            .requestMatchers("/api/auth/**", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
-//            .requestMatchers("/api/admin/**").hasRole("ADMIN")
+            .requestMatchers("/icons/**", "/images/**").permitAll()
+            .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
             .anyRequest().authenticated()
         )
         .addFilterBefore(
