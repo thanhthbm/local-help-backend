@@ -26,6 +26,8 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
 
     response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
     response.setContentType("application/json");
+    // Add WWW-Authenticate header to trigger OkHttp Authenticator
+    response.setHeader("WWW-Authenticate", "Bearer realm=\"localhelp\"");
 
     objectMapper.writeValue(response.getOutputStream(), rest);
   }

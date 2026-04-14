@@ -10,7 +10,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import jakarta.validation.constraints.Null;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
@@ -20,7 +19,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import vn.localhelp.core.domain.entity.User;
 import vn.localhelp.core.repository.UserRepository;
-//import vn.localhelp.core.util.error.NotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import vn.localhelp.core.util.constant.UserRole;
 
@@ -39,9 +37,8 @@ public class FirebaseAuthFilter extends OncePerRequestFilter {
       String token = header.substring(7);
       log.info("Bearer Token: {}", token);
 
-      try{
+      try {
         FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(token);
-
 
         String uid = decodedToken.getUid();
         String email = decodedToken.getEmail();
@@ -54,14 +51,15 @@ public class FirebaseAuthFilter extends OncePerRequestFilter {
         List<GrantedAuthority> authorities = new ArrayList<>();
         authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
 
-
         UsernamePasswordAuthenticationToken authentication =
             new UsernamePasswordAuthenticationToken(uid, email, authorities);
 
-
         SecurityContextHolder.getContext().setAuthentication(authentication);
-      } catch (Exception e){
+      } catch (Exception e) {
+        log.error("Firebase token verification failed", e);
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        // Add WWW-Authenticate header here as well for token expiration cases
+        response.setHeader("WWW-Authenticate", "Bearer realm=\"localhelp\", error=\"invalid_token\"");
         return;
       }
     }
