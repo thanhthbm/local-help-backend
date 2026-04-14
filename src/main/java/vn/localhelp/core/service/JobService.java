@@ -1,6 +1,5 @@
 package vn.localhelp.core.service;
 
-import jakarta.transaction.Transactional;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,22 +12,24 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import vn.localhelp.core.domain.entity.Category;
 import vn.localhelp.core.domain.entity.Job;
 import vn.localhelp.core.domain.entity.JobImage;
 import vn.localhelp.core.domain.entity.User;
 import vn.localhelp.core.domain.mapper.JobMapper;
-import vn.localhelp.core.domain.request.job.CreateJobRequest;
-import vn.localhelp.core.domain.response.common.ResultPaginationDTO;
-import vn.localhelp.core.domain.response.job.JobResponse;
 import vn.localhelp.core.repository.CategoryRepository;
 import vn.localhelp.core.repository.JobRepository;
 import vn.localhelp.core.repository.UserRepository;
+import vn.localhelp.core.domain.request.job.CreateJobRequest;
+import vn.localhelp.core.domain.response.common.ResultPaginationDTO;
+import vn.localhelp.core.domain.response.job.JobResponse;
+import vn.localhelp.core.specification.JobSpecification;
+import vn.localhelp.core.util.DistanceUtil;
 import vn.localhelp.core.util.FirebaseUtil;
 import vn.localhelp.core.util.constant.ImageType;
 import vn.localhelp.core.util.constant.JobStatus;
 import vn.localhelp.core.util.error.NotFoundException;
-import vn.localhelp.core.util.specification.JobSpecification;
 
 @Service
 @RequiredArgsConstructor
@@ -140,27 +141,51 @@ public class JobService {
     return jobMapper.toResponse(jobRepository.save(job));
   }
 
-  public List<JobResponse> searchJobs(String keyword) {
+  public ResultPaginationDTO<List<JobResponse>> searchJobs(String keyword, int page, int size) {
     String currentUid = FirebaseUtil.getCurrentUserUid();
     Specification<Job> specification = Specification.allOf(
         JobSpecification.hasJobStatus(JobStatus.OPEN),
         JobSpecification.notCreatedByFirebaseUid(currentUid),
         JobSpecification.hasKeyword(keyword)
     );
-
-    return jobRepository.findAll(specification, Sort.by(Sort.Direction.DESC, "createdAt"))
-        .stream()
-        .map(jobMapper::toResponse)
-        .collect(Collectors.toList());
-  }
-
-  public ResultPaginationDTO<List<JobResponse>> getOpenJob(int page, int size){
     Pageable pageable = PageRequest.of(page - 1, size, Sort.by("createdAt").descending());
-    String currentUid = FirebaseUtil.getCurrentUserUid();
-    Page<Job> pageJob = jobRepository.findByJobStatus(JobStatus.OPEN, currentUid, pageable);
+    Page<Job> pageJob = jobRepository.findAll(specification, pageable);
 
     List<JobResponse> listJobResponse = pageJob.getContent().stream()
         .map(jobMapper::toResponse)
+        .toList();
+
+    ResultPaginationDTO.Meta meta = new ResultPaginationDTO.Meta();
+    meta.setPage(page);
+    meta.setSize(size);
+    meta.setPages(pageJob.getTotalPages());
+    meta.setTotal(pageJob.getTotalElements());
+
+    ResultPaginationDTO<List<JobResponse>> result = new ResultPaginationDTO<>();
+    result.setMeta(meta);
+    result.setResult(listJobResponse);
+
+    return result;
+  }
+
+  public ResultPaginationDTO<List<JobResponse>> getOpenJob(int page, int size, Long categoryId, Double lat, Double lng){
+    Pageable pageable = PageRequest.of(page - 1, size, Sort.by("createdAt").descending());
+    String currentUid = FirebaseUtil.getCurrentUserUid();
+    Specification<Job> specification = Specification.allOf(
+        JobSpecification.hasJobStatus(JobStatus.OPEN),
+        JobSpecification.notCreatedByFirebaseUid(currentUid),
+        JobSpecification.hasCategory(categoryId)
+    );
+    Page<Job> pageJob = jobRepository.findAll(specification, pageable);
+
+    List<JobResponse> listJobResponse = pageJob.getContent().stream()
+        .map(job -> {
+          JobResponse response = jobMapper.toResponse(job);
+          if (lat != null && lng != null && job.getLatitude() != null && job.getLongitude() != null) {
+            response.setDistance(DistanceUtil.calculateDistance(lat, lng, job.getLatitude(), job.getLongitude()));
+          }
+          return response;
+        })
         .toList();
 
     ResultPaginationDTO.Meta meta = new ResultPaginationDTO.Meta();
@@ -215,6 +240,19 @@ public class JobService {
     result.setResult(listJobResponse);
 
     return result;
+  }
+
+  public List<JobResponse> getFeaturedJobs() {
+    String currentUid = FirebaseUtil.getCurrentUserUid();
+    Specification<Job> specification = Specification.allOf(
+        JobSpecification.hasJobStatus(JobStatus.OPEN),
+        JobSpecification.notCreatedByFirebaseUid(currentUid)
+    );
+    Pageable pageable = PageRequest.of(0, 10, Sort.by("createdAt").descending());
+    Page<Job> pageJob = jobRepository.findAll(specification, pageable);
+    return pageJob.getContent().stream()
+        .map(jobMapper::toResponse)
+        .collect(Collectors.toList());
   }
 
   private Job getJobOrThrow(Long id) {

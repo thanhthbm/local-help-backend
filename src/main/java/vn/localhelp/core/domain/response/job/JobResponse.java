@@ -26,4 +26,5 @@ public class JobResponse {
   private Double creatorRating;
   private List<String> images;
   private LocalDateTime createdAt;
+  private Double distance;
 }
