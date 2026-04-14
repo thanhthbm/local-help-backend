@@ -18,4 +18,6 @@ public class UpdateProfileRequest {
 
     @Size(max = 500, message = "Giới thiệu không được vượt quá 500 ký tự")
     private String bio;
+
+    private String avatarUrl;
 }

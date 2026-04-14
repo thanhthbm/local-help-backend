@@ -1,6 +1,7 @@
 package vn.localhelp.core.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import vn.localhelp.core.domain.entity.User;
@@ -22,6 +23,7 @@ import java.util.List;
 import vn.localhelp.core.domain.response.common.ResultPaginationDTO;
 import vn.localhelp.core.util.constant.UserStatus;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserService {
@@ -54,18 +56,23 @@ public class UserService {
     // Cập nhật thông tin text nếu có
     if (request != null) {
       if (request.getFullName() != null) user.setFullName(request.getFullName());
-      if (request.getPhone() != null)    user.setPhone(request.getPhone());
-      if (request.getGender() != null)   user.setGender(request.getGender());
-      if (request.getBio() != null)      user.setBio(request.getBio());
+      if (request.getPhone()    != null) user.setPhone(request.getPhone());
+      if (request.getGender()   != null) user.setGender(request.getGender());
+      if (request.getBio()      != null) user.setBio(request.getBio());
+      
+      // Nếu có avatarUrl từ client (đã upload trực tiếp lên Cloudinary)
+      if (request.getAvatarUrl() != null) {
+        user.setAvatarUrl(request.getAvatarUrl());
+      }
     }
 
-    // Upload avatar nếu có
+    // Upload avatar nếu có (giữ lại để tương thích ngược nếu cần, nhưng ưu tiên avatarUrl)
     if (avatarFile != null && !avatarFile.isEmpty()) {
       try {
         String avatarUrl = cloudinaryService.uploadImage(avatarFile);
         user.setAvatarUrl(avatarUrl);
       } catch (Exception e) {
-        throw new RuntimeException("Không thể tải lên ảnh đại diện: " + e.getMessage(), e);
+        log.error("Cloudinary upload failed: {}", e.getMessage());
       }
     }
 

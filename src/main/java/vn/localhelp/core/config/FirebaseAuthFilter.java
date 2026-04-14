@@ -70,7 +70,7 @@ public class FirebaseAuthFilter extends OncePerRequestFilter {
         return;
       }
     } else {
-      log.debug("No Bearer token found for {} {}", request.getMethod(), request.getRequestURI());
+      log.info("No Bearer token found for {} {}", request.getMethod(), request.getRequestURI());
     }
 
     filterChain.doFilter(request, response);
