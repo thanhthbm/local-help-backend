@@ -60,4 +60,7 @@ public interface JobRepository extends JpaRepository<Job, Long>, JpaSpecificatio
 
     Page<Job> findByCreatorIdOrderByCreatedAtDesc(Long creatorId, Pageable pageable);
 
+    List<Job> findByCreatorIdAndJobStatusAndCreatedAtBetween(Long creatorId, JobStatus status, LocalDateTime start, LocalDateTime end);
+    List<Job> findByHelperIdAndJobStatusAndCreatedAtBetween(Long helperId, JobStatus status, LocalDateTime start, LocalDateTime end);
+
 }
