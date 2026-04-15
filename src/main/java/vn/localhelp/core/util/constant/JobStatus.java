@@ -1,10 +1,11 @@
 package vn.localhelp.core.util.constant;
 
 public enum JobStatus {
-  OPEN,
-  IN_PROGRESS,
-  COMPLETED,
-  CANCELLED,
-  CLOSED,
-  ASSIGNED
+    OPEN,
+    ACCEPTED,
+    ON_THE_WAY,
+    WORKING,
+    PENDING_PAYMENT,
+    COMPLETED,
+    CANCELLED
 }

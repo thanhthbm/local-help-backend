@@ -58,4 +58,6 @@ public interface JobRepository extends JpaRepository<Job, Long>, JpaSpecificatio
             Pageable pageable
   );
 
+    Page<Job> findByCreatorIdOrderByCreatedAtDesc(Long creatorId, Pageable pageable);
+
 }

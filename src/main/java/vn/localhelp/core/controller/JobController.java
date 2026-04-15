@@ -20,7 +20,9 @@ import org.springframework.web.bind.annotation.*;
 import vn.localhelp.core.domain.entity.User;
 import vn.localhelp.core.domain.request.job.CreateJobRequest;
 import vn.localhelp.core.domain.request.job.SearchJobRequest;
+import vn.localhelp.core.domain.response.application.ApplicationResponse;
 import vn.localhelp.core.domain.response.common.ResultPaginationDTO;
+import vn.localhelp.core.domain.response.job.JobDetailResponse;
 import vn.localhelp.core.domain.response.job.JobResponse;
 import vn.localhelp.core.service.JobApplicationService;
 import vn.localhelp.core.service.JobService;
@@ -134,4 +136,82 @@ public class JobController {
       User currUser = currentUser.getUserEntity();
       jobApplicationService.applyForJob(jobId, currUser.getId());
   }
+
+    @GetMapping("/my-posts")
+    @ApiMessage("Lấy danh sách việc đã đăng thành công")
+    public ResponseEntity<ResultPaginationDTO<List<JobResponse>>> getMyPosts(
+            @RequestParam(defaultValue = "1") int current,
+            @RequestParam(defaultValue = "10") int pageSize,
+            @AuthenticationPrincipal CustomUserDetails currentUser) {
+
+        ResultPaginationDTO<List<JobResponse>> result =
+                jobService.getMyPosts(currentUser.getUserEntity().getId(), current, pageSize);
+
+        return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/my-tasks")
+    @ApiMessage("Lấy danh sách việc đã nhận thành công")
+    public ResponseEntity<ResultPaginationDTO<List<JobResponse>>> getMyTasks(
+            @RequestParam(defaultValue = "1") int current,
+            @RequestParam(defaultValue = "10") int pageSize,
+            @RequestParam(required = false) Double lat,
+            @RequestParam(required = false) Double lng,
+            @AuthenticationPrincipal CustomUserDetails currentUser) {
+
+        ResultPaginationDTO<List<JobResponse>> result =
+                jobService.getMyTasks(currentUser.getUserEntity().getId(), current, pageSize, lat, lng);
+
+        return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/{id}/detail")
+    @ApiMessage("Lấy chi tiết công việc và tiến độ thành công")
+    public ResponseEntity<JobDetailResponse> getJobDetailTracking(@PathVariable Long id) {
+        return ResponseEntity.ok(jobService.getJobDetail(id));
+    }
+
+    @GetMapping("/{jobId}/applications")
+    @ApiMessage("Lấy danh sách thợ ứng tuyển thành công")
+    public ResponseEntity<List<ApplicationResponse>> getApplications(
+            @PathVariable Long jobId,
+            @AuthenticationPrincipal CustomUserDetails currentUser) {
+
+        List<ApplicationResponse> list = jobApplicationService.getApplicationsForJob(
+                jobId,
+                currentUser.getUserEntity().getId()
+        );
+        return ResponseEntity.ok(list);
+    }
+
+    @PostMapping("/applications/{applicationId}/accept")
+    @ApiMessage("Chọn thợ thành công")
+    public ResponseEntity<Void> acceptApplication(
+            @PathVariable Long applicationId,
+            @AuthenticationPrincipal CustomUserDetails currentUser) {
+
+        jobApplicationService.acceptHelper(applicationId, currentUser.getUserEntity().getId());
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{jobId}/status/moving")
+    @ApiMessage("Cập nhật trạng thái đang di chuyển thành công")
+    public ResponseEntity<Void> statusMoving(
+            @PathVariable Long jobId,
+            @AuthenticationPrincipal CustomUserDetails currentUser) {
+
+        jobService.updateStatusMoving(jobId, currentUser.getUserEntity().getId());
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{jobId}/status/arrived")
+    @ApiMessage("Cập nhật trạng thái đã đến nơi thành công")
+    public ResponseEntity<Void> statusArrived(
+            @PathVariable Long jobId,
+            @AuthenticationPrincipal CustomUserDetails currentUser) {
+
+        jobService.updateStatusArrived(jobId, currentUser.getUserEntity().getId());
+        return ResponseEntity.ok().build();
+    }
+
 }

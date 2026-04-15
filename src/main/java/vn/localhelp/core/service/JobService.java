@@ -3,6 +3,8 @@ package vn.localhelp.core.service;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -12,14 +14,11 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import vn.localhelp.core.domain.entity.Category;
-import vn.localhelp.core.domain.entity.Job;
-import vn.localhelp.core.domain.entity.JobImage;
-import vn.localhelp.core.domain.entity.User;
+import vn.localhelp.core.domain.entity.*;
 import vn.localhelp.core.domain.mapper.JobMapper;
-import vn.localhelp.core.repository.CategoryRepository;
-import vn.localhelp.core.repository.JobRepository;
-import vn.localhelp.core.repository.UserRepository;
+import vn.localhelp.core.domain.response.job.JobDetailResponse;
+import vn.localhelp.core.domain.response.progress.ProgressResponse;
+import vn.localhelp.core.repository.*;
 import vn.localhelp.core.domain.request.job.CreateJobRequest;
 import vn.localhelp.core.domain.request.job.SearchJobRequest;
 import vn.localhelp.core.domain.response.common.ResultPaginationDTO;
@@ -28,6 +27,7 @@ import vn.localhelp.core.specification.JobSpecification;
 import vn.localhelp.core.util.DistanceUtil;
 import vn.localhelp.core.util.FirebaseUtil;
 import vn.localhelp.core.util.constant.ErrorCode;
+import vn.localhelp.core.util.constant.JobProgress;
 import vn.localhelp.core.util.constant.JobStatus;
 import vn.localhelp.core.util.error.AppException;
 import vn.localhelp.core.util.error.NotFoundException;
@@ -40,6 +40,8 @@ public class JobService {
   private final JobRepository jobRepository;
   private final UserRepository userRepository;
   private final CategoryRepository categoryRepository;
+  private final JobApplicationRepository applicationRepository;
+  private final ProgressRepository progressRepository;
   private final JobMapper jobMapper;
 
   @Transactional
@@ -116,7 +118,7 @@ public class JobService {
     Job job = getJobOrThrow(id);
     validateCreator(job, currentFirebaseUid);
 
-    if (job.getJobStatus() == JobStatus.IN_PROGRESS || job.getJobStatus() == JobStatus.COMPLETED) {
+    if (job.getJobStatus() != JobStatus.OPEN) {
       throw new RuntimeException("Cannot delete a job that is already in progress or completed");
     }
 
@@ -138,7 +140,7 @@ public class JobService {
         .orElseThrow(() -> new NotFoundException("User not found"));
 
     job.setHelper(helper);
-    job.setJobStatus(JobStatus.ASSIGNED);
+    job.setJobStatus(JobStatus.ACCEPTED);
 
     return jobMapper.toResponse(jobRepository.save(job));
   }
@@ -320,4 +322,140 @@ public class JobService {
           .build());
     }
   }
+
+  public ResultPaginationDTO<List<JobResponse>> getMyPosts(Long userId, int page, int size) {
+
+      Pageable pageable = PageRequest.of(page - 1, size, Sort.by("createdAt").descending());
+
+      Page<Job> pageJob = jobRepository.findByCreatorIdOrderByCreatedAtDesc(userId, pageable);
+
+      List<JobResponse> list = pageJob.getContent().stream().map(job -> {
+            JobResponse response = jobMapper.toResponse(job);
+            response.setDistance(0.0);
+            return response;
+        }).collect(Collectors.toList());
+
+        ResultPaginationDTO.Meta meta = new ResultPaginationDTO.Meta();
+        meta.setPage(page);
+        meta.setSize(size);
+        meta.setPages(pageJob.getTotalPages());
+        meta.setTotal(pageJob.getTotalElements());
+
+        ResultPaginationDTO<List<JobResponse>> result = new ResultPaginationDTO<>();
+        result.setMeta(meta);
+        result.setResult(list);
+
+        return result;
+    }
+
+  public ResultPaginationDTO<List<JobResponse>> getMyTasks(
+            Long helperId, int page, int size, Double helperLat, Double helperLng) {
+
+        Pageable pageable = PageRequest.of(page - 1, size, Sort.by("createdAt").descending());
+
+        Page<JobApplication> pageApp = applicationRepository.findByHelperId(helperId, pageable);
+
+        List<JobResponse> list = pageApp.getContent().stream().map(app -> {
+            Job job = app.getJob();
+
+            JobResponse response = jobMapper.toResponse(job);
+
+            response.setStatus(JobStatus.valueOf(app.getCurrentProgress().name()));
+            if (helperLat != null && helperLng != null && job.getLatitude() != null && job.getLongitude() != null) {
+                double dist = DistanceUtil.calculateDistance(
+                        helperLat, helperLng, job.getLatitude(), job.getLongitude()
+                );
+                response.setDistance(dist);
+            } else {
+                response.setDistance(null);
+            }
+
+            return response;
+        }).collect(Collectors.toList());
+
+        ResultPaginationDTO.Meta meta = new ResultPaginationDTO.Meta();
+        meta.setPage(page);
+        meta.setSize(size);
+        meta.setPages(pageApp.getTotalPages());
+        meta.setTotal(pageApp.getTotalElements());
+
+        ResultPaginationDTO<List<JobResponse>> result = new ResultPaginationDTO<>();
+        result.setMeta(meta);
+        result.setResult(list);
+
+        return result;
+    }
+
+    public JobDetailResponse getJobDetail(Long jobId) {
+        Job job = jobRepository.findById(jobId)
+                .orElseThrow(() -> new AppException(ErrorCode.JOB_NOT_FOUND));
+
+        JobResponse jobResponse = jobMapper.toResponse(job);
+        jobResponse.setDistance(null);
+
+        List<ProgressResponse> progressResponses = new ArrayList<>();
+
+        if (job.getHelper() != null) {
+            applicationRepository.findByJobIdAndHelperId(jobId, job.getHelper().getId())
+                    .ifPresent(app -> {
+                        List<Progress> history = progressRepository.findByJobApplicationIdOrderByTimestampAsc(app.getId());
+
+                        List<ProgressResponse> mappedProgresses = history.stream().map(p ->
+                                ProgressResponse.builder()
+                                        .stepName(p.getName().name())
+                                        .description(p.getDescription())
+                                        .time(p.getTimestamp())
+                                        .isCompleted(true)
+                                        .isCurrent(false)
+                                        .build()
+                        ).toList();
+
+                        if (!mappedProgresses.isEmpty()) {
+                            mappedProgresses.getLast().setCurrent(true);
+                        }
+
+                        progressResponses.addAll(mappedProgresses);
+                    });
+        }
+
+        return JobDetailResponse.builder()
+                .jobInfo(jobResponse)
+                .description(job.getDescription())
+                .progresses(progressResponses)
+                .build();
+    }
+    @Transactional
+    public void updateStatusMoving(Long jobId, Long helperId) {
+        updateJobAndProgress(jobId, helperId, JobStatus.ON_THE_WAY, "Thợ đang trên đường đến.");
+    }
+
+    @Transactional
+    public void updateStatusArrived(Long jobId, Long helperId) {
+        updateJobAndProgress(jobId, helperId, JobStatus.WORKING, "Thợ đã đến nơi và bắt đầu làm việc.");
+    }
+
+    private void updateJobAndProgress(Long jobId, Long helperId, JobStatus newStatus, String description) {
+        Job job = jobRepository.findById(jobId)
+                .orElseThrow(() -> new AppException(ErrorCode.JOB_NOT_FOUND));
+
+        if (job.getHelper() == null || !job.getHelper().getId().equals(helperId)) {
+            throw new AppException(ErrorCode.INVALID_PARAM);
+        }
+
+        job.setJobStatus(newStatus);
+        jobRepository.save(job);
+
+        JobApplication app = applicationRepository.findByJobIdAndHelperId(jobId, helperId)
+                .orElseThrow(() -> new AppException(ErrorCode.INVALID_PARAM));
+
+        app.setCurrentProgress(JobProgress.valueOf(newStatus.name()));
+        applicationRepository.save(app);
+
+        Progress progress = new Progress();
+        progress.setJobApplication(app);
+        progress.setName(JobProgress.valueOf(newStatus.name()));
+        progress.setDescription(description);
+        progress.setTimestamp(LocalDateTime.now());
+        progressRepository.save(progress);
+    }
 }
