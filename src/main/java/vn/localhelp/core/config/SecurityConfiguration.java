@@ -35,6 +35,7 @@ public class SecurityConfiguration {
             .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
             .requestMatchers("/api/users/me").permitAll()
             .requestMatchers(HttpMethod.GET, "/api/jobs/**").permitAll()
+            .requestMatchers("/api/auth/**").permitAll()
             .anyRequest().authenticated()
         )
         .addFilterBefore(
