@@ -27,4 +27,9 @@ public class JobResponse {
   private List<String> images;
   private LocalDateTime createdAt;
   private Double distance;
+
+  private Long helperId;
+  private String helperName;
+  private String helperAvatar;
+  private Double helperRating;
 }

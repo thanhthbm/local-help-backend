@@ -14,10 +14,15 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 import vn.localhelp.core.domain.entity.*;
 import vn.localhelp.core.domain.mapper.JobMapper;
+import vn.localhelp.core.domain.request.review.ReviewRequest;
+import vn.localhelp.core.domain.response.application.ApplicationResponse;
 import vn.localhelp.core.domain.response.job.JobDetailResponse;
+import vn.localhelp.core.domain.response.job.JobImageResponse;
 import vn.localhelp.core.domain.response.progress.ProgressResponse;
+import vn.localhelp.core.domain.response.review.ReviewResponse;
 import vn.localhelp.core.repository.*;
 import vn.localhelp.core.domain.request.job.CreateJobRequest;
 import vn.localhelp.core.domain.request.job.SearchJobRequest;
@@ -27,6 +32,7 @@ import vn.localhelp.core.specification.JobSpecification;
 import vn.localhelp.core.util.DistanceUtil;
 import vn.localhelp.core.util.FirebaseUtil;
 import vn.localhelp.core.util.constant.ErrorCode;
+import vn.localhelp.core.util.constant.ImageType;
 import vn.localhelp.core.util.constant.JobProgress;
 import vn.localhelp.core.util.constant.JobStatus;
 import vn.localhelp.core.util.error.AppException;
@@ -42,6 +48,9 @@ public class JobService {
   private final CategoryRepository categoryRepository;
   private final JobApplicationRepository applicationRepository;
   private final ProgressRepository progressRepository;
+  private final CloudinaryService cloudinaryService;
+  private final ReviewRepository reviewRepository;
+  private final JobImageRepository jobImageRepository;
   private final JobMapper jobMapper;
 
   @Transactional
@@ -348,8 +357,7 @@ public class JobService {
         return result;
     }
 
-  public ResultPaginationDTO<List<JobResponse>> getMyTasks(
-            Long helperId, int page, int size, Double helperLat, Double helperLng) {
+  public ResultPaginationDTO<List<JobResponse>> getMyTasks(Long helperId, int page, int size, Double helperLat, Double helperLng) {
 
         Pageable pageable = PageRequest.of(page - 1, size, Sort.by("createdAt").descending());
 
@@ -357,9 +365,7 @@ public class JobService {
 
         List<JobResponse> list = pageApp.getContent().stream().map(app -> {
             Job job = app.getJob();
-
             JobResponse response = jobMapper.toResponse(job);
-
             response.setStatus(JobStatus.valueOf(app.getCurrentProgress().name()));
             if (helperLat != null && helperLng != null && job.getLatitude() != null && job.getLongitude() != null) {
                 double dist = DistanceUtil.calculateDistance(
@@ -386,7 +392,7 @@ public class JobService {
         return result;
     }
 
-    public JobDetailResponse getJobDetail(Long jobId) {
+    public JobDetailResponse getJobDetail(Long jobId, Long currentUserId) {
         Job job = jobRepository.findById(jobId)
                 .orElseThrow(() -> new AppException(ErrorCode.JOB_NOT_FOUND));
 
@@ -394,28 +400,30 @@ public class JobService {
         jobResponse.setDistance(null);
 
         List<ProgressResponse> progressResponses = new ArrayList<>();
+        boolean isCreator = job.getCreator().getId().equals(currentUserId);
 
-        if (job.getHelper() != null) {
-            applicationRepository.findByJobIdAndHelperId(jobId, job.getHelper().getId())
+
+        if (isCreator) {
+            if (job.getHelper() != null) {
+                applicationRepository.findByJobIdAndHelperId(jobId, job.getHelper().getId())
+                        .ifPresent(app -> {
+                            progressResponses.addAll(getMappedProgresses(app.getId()));
+                        });
+            }
+        } else {
+            applicationRepository.findByJobIdAndHelperId(jobId, currentUserId)
                     .ifPresent(app -> {
-                        List<Progress> history = progressRepository.findByJobApplicationIdOrderByTimestampAsc(app.getId());
-
-                        List<ProgressResponse> mappedProgresses = history.stream().map(p ->
-                                ProgressResponse.builder()
-                                        .stepName(p.getName().name())
-                                        .description(p.getDescription())
-                                        .time(p.getTimestamp())
-                                        .isCompleted(true)
-                                        .isCurrent(false)
-                                        .build()
-                        ).toList();
-
-                        if (!mappedProgresses.isEmpty()) {
-                            mappedProgresses.getLast().setCurrent(true);
-                        }
-
-                        progressResponses.addAll(mappedProgresses);
+                        progressResponses.addAll(getMappedProgresses(app.getId()));
                     });
+        }
+
+        if(job.getHelper() != null){
+            jobResponse.setHelperId(job.getHelper().getId());
+            jobResponse.setHelperName(job.getHelper().getFullName());
+            jobResponse.setHelperAvatar(job.getHelper().getAvatarUrl());
+
+            Double rating = job.getHelper().getReputationScore();
+            jobResponse.setHelperRating(rating != null ? rating : 0.0);
         }
 
         return JobDetailResponse.builder()
@@ -424,6 +432,26 @@ public class JobService {
                 .progresses(progressResponses)
                 .build();
     }
+
+    private List<ProgressResponse> getMappedProgresses(Long applicationId) {
+        List<Progress> history = progressRepository.findByJobApplicationIdOrderByTimestampAsc(applicationId);
+        if (history.isEmpty()) return new ArrayList<>();
+
+        List<ProgressResponse> mapped = history.stream().map(p ->
+                ProgressResponse.builder()
+                        .stepName(p.getName().name())
+                        .description(p.getDescription())
+                        .time(p.getTimestamp())
+                        .isCompleted(true)
+                        .isCurrent(false)
+                        .build()
+        ).collect(Collectors.toList());
+
+        mapped.getLast().setCurrent(true);
+        return mapped;
+    }
+
+
     @Transactional
     public void updateStatusMoving(Long jobId, Long helperId) {
         updateJobAndProgress(jobId, helperId, JobStatus.ON_THE_WAY, "Thợ đang trên đường đến.");
@@ -457,5 +485,162 @@ public class JobService {
         progress.setDescription(description);
         progress.setTimestamp(LocalDateTime.now());
         progressRepository.save(progress);
+    }
+
+    @Transactional
+    public void submitEvidence(Long jobId, Long helperId, String note, List<MultipartFile> images) {
+        Job job = jobRepository.findById(jobId)
+                .orElseThrow(() -> new AppException(ErrorCode.JOB_NOT_FOUND));
+
+        if (job.getHelper() == null || !job.getHelper().getId().equals(helperId)) {
+            throw new AppException(ErrorCode.INVALID_PARAM);
+        }
+
+        if (images != null && !images.isEmpty()) {
+            for (MultipartFile file : images) {
+                try {
+                    String imageUrl = cloudinaryService.uploadImage(file);
+
+                    JobImage jobImage = new JobImage();
+                    jobImage.setImageUrl(imageUrl);
+                    jobImage.setImageType(ImageType.PROOF);
+                    jobImage.setJob(job);
+
+                    job.getJobImages().add(jobImage);
+                } catch (Exception e) {
+                    throw new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION);
+                }
+            }
+        }
+
+        job.setJobStatus(JobStatus.PENDING_PAYMENT);
+        jobRepository.save(job);
+
+        JobApplication app = applicationRepository.findByJobIdAndHelperId(jobId, helperId)
+                .orElseThrow(() -> new AppException(ErrorCode.INVALID_PARAM));
+
+        app.setCurrentProgress(JobProgress.PENDING_PAYMENT);
+        applicationRepository.save(app);
+
+        Progress progress = new Progress();
+        progress.setJobApplication(app);
+        progress.setName(JobProgress.PENDING_PAYMENT);
+
+        String finalNote = (note != null && !note.trim().isEmpty()) ? note : "Thợ đã gửi bằng chứng hoàn thành và chờ thanh toán.";
+        progress.setDescription(finalNote);
+        progress.setTimestamp(LocalDateTime.now());
+
+        progressRepository.save(progress);
+    }
+
+    public void remindPayment(Long jobId, Long helperId) {
+        Job job = jobRepository.findById(jobId)
+                .orElseThrow(() -> new AppException(ErrorCode.JOB_NOT_FOUND));
+
+        if (job.getHelper() == null || !job.getHelper().getId().equals(helperId)) {
+            throw new AppException(ErrorCode.INVALID_PARAM);
+        }
+
+        if (job.getJobStatus() != JobStatus.PENDING_PAYMENT) {
+            throw new AppException(ErrorCode.INVALID_PARAM);
+        }
+
+        User creator = job.getCreator();
+    }
+
+    @Transactional
+    public void confirmPayment(Long jobId, Long currentUserId) {
+        Job job = jobRepository.findById(jobId)
+                .orElseThrow(() -> new AppException(ErrorCode.JOB_NOT_FOUND));
+
+        if (!job.getCreator().getId().equals(currentUserId)) {
+            throw new AppException(ErrorCode.INVALID_PARAM);
+        }
+
+        if (job.getJobStatus() != JobStatus.PENDING_PAYMENT) {
+            throw new AppException(ErrorCode.INVALID_PARAM);
+        }
+
+        job.setJobStatus(JobStatus.COMPLETED);
+        jobRepository.save(job);
+
+        JobApplication app = applicationRepository.findByJobIdAndHelperId(jobId, job.getHelper().getId())
+                .orElseThrow(() -> new AppException(ErrorCode.INVALID_PARAM));
+
+        app.setCurrentProgress(JobProgress.COMPLETED);
+        applicationRepository.save(app);
+
+        Progress progress = new Progress();
+        progress.setJobApplication(app);
+        progress.setName(JobProgress.COMPLETED);
+
+        // Cộng tiền ở đây
+
+        progress.setDescription("Chủ nhà đã xác nhận hoàn thành và thanh toán. Công việc kết thúc.");
+        progress.setTimestamp(LocalDateTime.now());
+        progressRepository.save(progress);
+    }
+
+    @Transactional
+    public void reviewHelper(Long jobId, Long currentUserId, ReviewRequest request) {
+        Job job = jobRepository.findById(jobId)
+                .orElseThrow(() -> new AppException(ErrorCode.JOB_NOT_FOUND));
+
+        if (!job.getCreator().getId().equals(currentUserId)) {
+            throw new AppException(ErrorCode.INVALID_PARAM);
+        }
+
+        if (job.getJobStatus() != JobStatus.COMPLETED) {
+            throw new AppException(ErrorCode.INVALID_PARAM);
+        }
+
+        Review review = new Review();
+        review.setJob(job);
+        review.setReviewer(job.getCreator());
+        review.setReviewee(job.getHelper());
+        review.setRating(request.getRating());
+        review.setComment(request.getComment());
+        reviewRepository.save(review);
+
+        Double avgRating = reviewRepository.getAverageRatingByRevieweeId(job.getHelper().getId());
+        User helper = job.getHelper();
+        helper.setReputationScore(avgRating != null ? Math.round(avgRating * 10.0) / 10.0 : 0.0);
+        userRepository.save(helper);
+    }
+
+    public List<JobImageResponse> getJobEvidence(Long jobId, Long currentUserId) {
+        Job job = jobRepository.findById(jobId)
+                .orElseThrow(() -> new AppException(ErrorCode.JOB_NOT_FOUND));
+
+        if (!job.getCreator().getId().equals(currentUserId) &&
+                (job.getHelper() == null || !job.getHelper().getId().equals(currentUserId))) {
+            throw new AppException(ErrorCode.INVALID_PARAM);
+        }
+
+        return jobImageRepository.findByJobIdAndImageType(jobId, ImageType.PROOF)
+                .stream()
+                .map(img -> JobImageResponse.builder()
+                        .id(img.getId())
+                        .imageUrl(img.getImageUrl())
+                        .imageType(img.getImageType().name())
+                        .build())
+                .toList();
+    }
+
+    public ReviewResponse getJobReview(Long jobId) {
+        jobRepository.findById(jobId)
+                .orElseThrow(() -> new AppException(ErrorCode.JOB_NOT_FOUND));
+
+        Review review = reviewRepository.findByJobId(jobId)
+                .orElseThrow(() -> new AppException(ErrorCode.INVALID_PARAM));
+
+        return ReviewResponse.builder()
+                .id(review.getId())
+                .rating(review.getRating())
+                .comment(review.getComment())
+                .reviewerName(review.getReviewer().getFullName())
+                .reviewerAvatar(review.getReviewer().getAvatarUrl())
+                .createdAt(review.getCreatedAt())
+                .build();
     }
 }

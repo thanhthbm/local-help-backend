@@ -11,7 +11,8 @@ public enum ErrorCode {
     JOB_NOT_OPEN(400, "Công việc này đã đóng hoặc đã có người nhận"),
     CANNOT_APPLY_OWN_JOB(400, "Bạn không thể tự nhận công việc của chính mình"),
     ALREADY_APPLIED(400, "Bạn đã ứng tuyển công việc này rồi, vui lòng chờ xác nhận"),
-    NOT_IMPLEMENTED(500, "chưa triển khai tính năng này.");
+    NOT_IMPLEMENTED(500, "chưa triển khai tính năng này."),
+    UNCATEGORIZED_EXCEPTION(500, "lỗi up ảnh");
 
     private final int status;
     private final String message;

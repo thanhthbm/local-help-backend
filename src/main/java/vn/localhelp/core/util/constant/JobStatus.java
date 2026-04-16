@@ -7,5 +7,7 @@ public enum JobStatus {
     WORKING,
     PENDING_PAYMENT,
     COMPLETED,
-    CANCELLED
+    CANCELLED,
+    APPLIED,
+    REJECTED
 }

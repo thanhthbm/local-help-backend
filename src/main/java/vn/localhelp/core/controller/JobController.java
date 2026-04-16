@@ -17,13 +17,17 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import vn.localhelp.core.domain.entity.User;
 import vn.localhelp.core.domain.request.job.CreateJobRequest;
 import vn.localhelp.core.domain.request.job.SearchJobRequest;
+import vn.localhelp.core.domain.request.review.ReviewRequest;
 import vn.localhelp.core.domain.response.application.ApplicationResponse;
 import vn.localhelp.core.domain.response.common.ResultPaginationDTO;
 import vn.localhelp.core.domain.response.job.JobDetailResponse;
+import vn.localhelp.core.domain.response.job.JobImageResponse;
 import vn.localhelp.core.domain.response.job.JobResponse;
+import vn.localhelp.core.domain.response.review.ReviewResponse;
 import vn.localhelp.core.service.JobApplicationService;
 import vn.localhelp.core.service.JobService;
 import vn.localhelp.core.util.CustomUserDetails;
@@ -167,8 +171,11 @@ public class JobController {
 
     @GetMapping("/{id}/detail")
     @ApiMessage("Lấy chi tiết công việc và tiến độ thành công")
-    public ResponseEntity<JobDetailResponse> getJobDetailTracking(@PathVariable Long id) {
-        return ResponseEntity.ok(jobService.getJobDetail(id));
+    public ResponseEntity<JobDetailResponse> getJobDetailTracking(
+            @PathVariable Long id,
+            @AuthenticationPrincipal CustomUserDetails currentUser
+    ) {
+        return ResponseEntity.ok(jobService.getJobDetail(id, currentUser.getUserEntity().getId()));
     }
 
     @GetMapping("/{jobId}/applications")
@@ -214,4 +221,61 @@ public class JobController {
         return ResponseEntity.ok().build();
     }
 
+    @PostMapping(value = "/{jobId}/submit-evidence", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
+    @ApiMessage("Gửi bằng chứng hoàn thành thành công")
+    public ResponseEntity<Void> submitEvidence(
+            @PathVariable Long jobId,
+            @RequestParam(required = false) String note,
+            @RequestPart(value = "images", required = false) List<MultipartFile> images,
+            @AuthenticationPrincipal CustomUserDetails currentUser) {
+
+        jobService.submitEvidence(jobId, currentUser.getUserEntity().getId(), note, images);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{jobId}/remind-payment")
+    @ApiMessage("Đã gửi thông báo nhắc nhở khách hàng")
+    public ResponseEntity<Void> remindPayment(
+            @PathVariable Long jobId,
+            @AuthenticationPrincipal CustomUserDetails currentUser) {
+
+        jobService.remindPayment(jobId, currentUser.getUserEntity().getId());
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{jobId}/confirm-payment")
+    @ApiMessage("Xác nhận hoàn thành thành công")
+    public ResponseEntity<Void> confirmPayment(
+            @PathVariable Long jobId,
+            @AuthenticationPrincipal CustomUserDetails currentUser) {
+
+        jobService.confirmPayment(jobId, currentUser.getUserEntity().getId());
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{jobId}/reviews")
+    @ApiMessage("Đánh giá thợ thành công")
+    public ResponseEntity<Void> reviewHelper(
+            @PathVariable Long jobId,
+            @Valid @RequestBody ReviewRequest request,
+            @AuthenticationPrincipal CustomUserDetails currentUser) {
+
+        jobService.reviewHelper(jobId, currentUser.getUserEntity().getId(), request);
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/{jobId}/evidence")
+    @ApiMessage("Lấy danh sách ảnh bằng chứng thành công")
+    public ResponseEntity<List<JobImageResponse>> getJobEvidence(
+            @PathVariable Long jobId,
+            @AuthenticationPrincipal CustomUserDetails currentUser) {
+
+        return ResponseEntity.ok(jobService.getJobEvidence(jobId, currentUser.getUserEntity().getId()));
+    }
+
+    @GetMapping("/{jobId}/review")
+    @ApiMessage("Lấy thông tin đánh giá thành công")
+    public ResponseEntity<ReviewResponse> getJobReview(@PathVariable Long jobId) {
+        return ResponseEntity.ok(jobService.getJobReview(jobId));
+    }
 }
