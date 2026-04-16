@@ -2,6 +2,7 @@ package vn.localhelp.core.specification;
 
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.util.StringUtils;
 import vn.localhelp.core.domain.entity.Job;
 import vn.localhelp.core.util.constant.JobStatus;
 
@@ -27,7 +28,7 @@ public class JobSpecification {
 
   public static Specification<Job> hasKeyword(String keyword) {
     return (root, query, criteriaBuilder) -> {
-      if (keyword == null || keyword.isEmpty()) {
+      if (!StringUtils.hasText(keyword)) {
         return criteriaBuilder.conjunction();
       }
       String likePattern = "%" + keyword.toLowerCase() + "%";

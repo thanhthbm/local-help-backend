@@ -28,7 +28,7 @@ public interface JobRepository extends JpaRepository<Job, Long>, JpaSpecificatio
                    "AND (:hasCategory = 0 OR j.category_id IN (:categoryIds)) " +
                    "AND (:startTime IS NULL OR j.created_at >= :startTime) " +
                    "AND (:endTime IS NULL OR j.created_at <= :endTime) " +
-                   "AND (j.title LIKE CONCAT('%', :keyword, '%') " +
+                   "AND (:keyword IS NULL OR :keyword = '' OR j.title LIKE CONCAT('%', :keyword, '%') " +
                    "OR j.description LIKE CONCAT('%', :keyword, '%')) " +
 
                    "AND ST_Distance_Sphere(POINT(j.longitude, j.latitude), POINT(:userLng, :userLat)) <= (:maxDistance * 1000) " +
@@ -40,7 +40,7 @@ public interface JobRepository extends JpaRepository<Job, Long>, JpaSpecificatio
                     "AND (:hasCategory = 0 OR j.category_id IN (:categoryIds)) " +
                     "AND (:startTime IS NULL OR j.created_at >= :startTime) " +
                     "AND (:endTime IS NULL OR j.created_at <= :endTime) " +
-                    "AND (j.title LIKE CONCAT('%', :keyword, '%') " +
+                    "AND (:keyword IS NULL OR :keyword = '' OR j.title LIKE CONCAT('%', :keyword, '%') " +
                     "OR j.description LIKE CONCAT('%', :keyword, '%')) " +
                     "AND ST_Distance_Sphere(POINT(j.longitude, j.latitude), POINT(:userLng, :userLat)) <= (:maxDistance * 1000) ",
             nativeQuery = true)
