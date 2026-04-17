@@ -558,6 +558,8 @@ public class JobService {
         app.setCurrentProgress(JobProgress.COMPLETED);
         applicationRepository.save(app);
 
+        // nếu muốn thêm thanh toán
+
         Progress progress = new Progress();
         progress.setJobApplication(app);
         progress.setName(JobProgress.COMPLETED);
