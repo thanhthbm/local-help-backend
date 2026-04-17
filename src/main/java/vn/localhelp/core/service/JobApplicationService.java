@@ -131,6 +131,12 @@ public class JobApplicationService {
                 progress.setTimestamp(LocalDateTime.now());
                 progressRepository.save(progress);
             } else {
+                Progress progress = new Progress();
+                progress.setJobApplication(app);
+                progress.setName(JobProgress.REJECTED);
+                progress.setDescription("Chủ nhà đã chọn người khác tốt hơn bạn ¬_¬.");
+                progress.setTimestamp(LocalDateTime.now());
+                progressRepository.save(progress);
                 app.setCurrentProgress(JobProgress.REJECTED);
                 applicationRepository.save(app);
             }
