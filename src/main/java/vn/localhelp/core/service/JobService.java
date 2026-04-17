@@ -53,6 +53,7 @@ public class JobService {
   private final ReviewRepository reviewRepository;
   private final JobImageRepository jobImageRepository;
   private final JobMapper jobMapper;
+  private final FirebaseService firebaseService;
 
   @Transactional
   public JobResponse createJob(String currentFirebaseUid, CreateJobRequest createJobRequest) {
@@ -152,7 +153,10 @@ public class JobService {
     job.setHelper(helper);
     job.setJobStatus(JobStatus.ACCEPTED);
 
-    return jobMapper.toResponse(jobRepository.save(job));
+    Job savedJob = jobRepository.save(job);
+    syncRealtimeStatus(savedJob);
+
+    return jobMapper.toResponse(savedJob);
   }
 
   public ResultPaginationDTO<List<JobResponse>> searchJobs(String keyword, int page, int size) {
@@ -472,7 +476,8 @@ public class JobService {
         }
 
         job.setJobStatus(newStatus);
-        jobRepository.save(job);
+        Job savedJob = jobRepository.save(job);
+        syncRealtimeStatus(savedJob);
 
         JobApplication app = applicationRepository.findByJobIdAndHelperId(jobId, helperId)
                 .orElseThrow(() -> new AppException(ErrorCode.INVALID_PARAM));
@@ -518,7 +523,8 @@ public class JobService {
         progress.setTimestamp(LocalDateTime.now());
 
         progressRepository.save(progress);
-        jobRepository.save(job);
+        Job savedJob = jobRepository.save(job);
+        syncRealtimeStatus(savedJob);
     }
 
     public void remindPayment(Long jobId, Long helperId) {
@@ -550,7 +556,8 @@ public class JobService {
         }
 
         job.setJobStatus(JobStatus.COMPLETED);
-        jobRepository.save(job);
+        Job savedJob = jobRepository.save(job);
+        syncRealtimeStatus(savedJob);
 
         JobApplication app = applicationRepository.findByJobIdAndHelperId(jobId, job.getHelper().getId())
                 .orElseThrow(() -> new AppException(ErrorCode.INVALID_PARAM));
@@ -630,5 +637,9 @@ public class JobService {
                 .reviewerAvatar(review.getReviewer().getAvatarUrl())
                 .createdAt(review.getCreatedAt())
                 .build();
+    }
+
+    private void syncRealtimeStatus(Job job) {
+        firebaseService.updateJobStatusRealtime(job.getId(), job.getJobStatus().name());
     }
 }
