@@ -25,15 +25,18 @@ public class JobApplicationService {
     private final UserRepository userRepository;
     private final JobApplicationRepository applicationRepository;
     private final ProgressRepository progressRepository;
+    private final FirebaseService firebaseService;
 
     public JobApplicationService(JobRepository jobRepository,
                                  UserRepository userRepository,
                                  JobApplicationRepository applicationRepository,
-                                 ProgressRepository progressRepository) {
+                                 ProgressRepository progressRepository,
+                                 FirebaseService firebaseService) {
         this.jobRepository = jobRepository;
         this.userRepository = userRepository;
         this.applicationRepository = applicationRepository;
         this.progressRepository = progressRepository;
+        this.firebaseService = firebaseService;
     }
 
     @Transactional
@@ -116,6 +119,7 @@ public class JobApplicationService {
         job.setHelper(acceptedApp.getHelper());
         job.setJobStatus(JobStatus.ACCEPTED);
         jobRepository.save(job);
+        firebaseService.updateJobStatusRealtime(job.getId(), job.getJobStatus().name());
 
         List<JobApplication> allApps = applicationRepository.findByJobId(job.getId());
 
