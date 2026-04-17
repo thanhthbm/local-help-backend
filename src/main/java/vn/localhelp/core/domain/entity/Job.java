@@ -67,4 +67,7 @@ public class Job {
 
   @OneToOne(mappedBy = "job", cascade = CascadeType.ALL)
   private Review review;
+
+  @Column(name = "cancel_time")
+  private LocalDateTime cancelTime;
 }

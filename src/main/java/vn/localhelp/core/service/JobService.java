@@ -126,14 +126,34 @@ public class JobService {
 
   @Transactional
   public void deleteJob(Long id, String currentFirebaseUid) {
-    Job job = getJobOrThrow(id);
-    validateCreator(job, currentFirebaseUid);
+      Job job = getJobOrThrow(id);
+      validateCreator(job, currentFirebaseUid);
 
-    if (job.getJobStatus() != JobStatus.OPEN) {
-      throw new RuntimeException("Cannot delete a job that is already in progress or completed");
-    }
+      if (job.getJobStatus() != JobStatus.OPEN) {
+          throw new RuntimeException("Cannot delete a job that is already in progress or completed");
+      }
 
-    jobRepository.delete(job);
+      job.setJobStatus(JobStatus.CANCELLED);
+      job.setCancelTime(LocalDateTime.now());
+      jobRepository.save(job);
+
+      List<JobApplication> applications = applicationRepository.findByJobId(id);
+
+      if (applications != null && !applications.isEmpty()) {
+          for (JobApplication app : applications) {
+
+              app.setCurrentProgress(JobProgress.CANCELLED);
+              applicationRepository.save(app);
+
+              Progress progress = new Progress();
+              progress.setJobApplication(app);
+              progress.setName(JobProgress.CANCELLED);
+              progress.setDescription("Chủ nhà đã hủy công việc này.");
+              progress.setTimestamp(LocalDateTime.now());
+
+              progressRepository.save(progress);
+          }
+      }
   }
 
   @Transactional
@@ -415,12 +435,28 @@ public class JobService {
                             progressResponses.addAll(getMappedProgresses(app.getId()));
                         });
             }
+            if (job.getJobStatus() == JobStatus.CANCELLED) {
+                if (!progressResponses.isEmpty()) {
+                    progressResponses.forEach(p -> p.setCurrent(false));
+                }
+
+                ProgressResponse cancelProgress = ProgressResponse.builder()
+                        .stepName("CANCELLED")
+                        .description("Công việc đã bị hủy bởi chủ nhà.")
+                        .time(job.getCancelTime())
+                        .isCompleted(true)
+                        .isCurrent(true)
+                        .build();
+
+                progressResponses.add(cancelProgress);
+            }
         } else {
             applicationRepository.findByJobIdAndHelperId(jobId, currentUserId)
                     .ifPresent(app -> {
                         progressResponses.addAll(getMappedProgresses(app.getId()));
                     });
         }
+
 
         if(job.getHelper() != null){
             jobResponse.setHelperId(job.getHelper().getId());
