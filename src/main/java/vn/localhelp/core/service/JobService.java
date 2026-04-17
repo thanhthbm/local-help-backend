@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -39,7 +40,7 @@ import vn.localhelp.core.util.error.AppException;
 import vn.localhelp.core.util.error.NotFoundException;
 
 import static java.util.stream.Collectors.toList;
-
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class JobService {
@@ -488,49 +489,24 @@ public class JobService {
     }
 
     @Transactional
-    public void submitEvidence(Long jobId, Long helperId, String note, List<MultipartFile> images) {
+    public void submitEvidence(Long jobId, List<String> imageUrls) {
         Job job = jobRepository.findById(jobId)
                 .orElseThrow(() -> new AppException(ErrorCode.JOB_NOT_FOUND));
 
-        if (job.getHelper() == null || !job.getHelper().getId().equals(helperId)) {
-            throw new AppException(ErrorCode.INVALID_PARAM);
-        }
+        if (imageUrls != null && !imageUrls.isEmpty()) {
+            for (String url : imageUrls) {
+                JobImage jobImage = new JobImage();
+                jobImage.setImageUrl(url);
+                jobImage.setImageType(ImageType.PROOF);
+                jobImage.setJob(job);
 
-        if (images != null && !images.isEmpty()) {
-            for (MultipartFile file : images) {
-                try {
-                    String imageUrl = cloudinaryService.uploadImage(file);
-
-                    JobImage jobImage = new JobImage();
-                    jobImage.setImageUrl(imageUrl);
-                    jobImage.setImageType(ImageType.PROOF);
-                    jobImage.setJob(job);
-
-                    job.getJobImages().add(jobImage);
-                } catch (Exception e) {
-                    throw new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION);
-                }
+                job.getJobImages().add(jobImage);
             }
         }
 
         job.setJobStatus(JobStatus.PENDING_PAYMENT);
+
         jobRepository.save(job);
-
-        JobApplication app = applicationRepository.findByJobIdAndHelperId(jobId, helperId)
-                .orElseThrow(() -> new AppException(ErrorCode.INVALID_PARAM));
-
-        app.setCurrentProgress(JobProgress.PENDING_PAYMENT);
-        applicationRepository.save(app);
-
-        Progress progress = new Progress();
-        progress.setJobApplication(app);
-        progress.setName(JobProgress.PENDING_PAYMENT);
-
-        String finalNote = (note != null && !note.trim().isEmpty()) ? note : "Thợ đã gửi bằng chứng hoàn thành và chờ thanh toán.";
-        progress.setDescription(finalNote);
-        progress.setTimestamp(LocalDateTime.now());
-
-        progressRepository.save(progress);
     }
 
     public void remindPayment(Long jobId, Long helperId) {

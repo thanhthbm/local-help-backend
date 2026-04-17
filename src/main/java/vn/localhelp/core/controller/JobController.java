@@ -4,6 +4,7 @@ import java.util.List;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -221,16 +222,13 @@ public class JobController {
         return ResponseEntity.ok().build();
     }
 
-    @PostMapping(value = "/{jobId}/submit-evidence", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
-    @ApiMessage("Gửi bằng chứng hoàn thành thành công")
+    @PostMapping("/{jobId}/submit-evidence")
     public ResponseEntity<Void> submitEvidence(
             @PathVariable Long jobId,
-            @RequestParam(required = false) String note,
-            @RequestPart(value = "images", required = false) List<MultipartFile> images,
-            @AuthenticationPrincipal CustomUserDetails currentUser) {
+            @RequestBody List<String> imageUrls) {
 
-        jobService.submitEvidence(jobId, currentUser.getUserEntity().getId(), note, images);
-        return ResponseEntity.ok().build();
+        jobService.submitEvidence(jobId, imageUrls);
+        return ResponseEntity.ok(null);
     }
 
     @PostMapping("/{jobId}/remind-payment")
