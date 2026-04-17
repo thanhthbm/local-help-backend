@@ -505,7 +505,19 @@ public class JobService {
         }
 
         job.setJobStatus(JobStatus.PENDING_PAYMENT);
+        JobApplication app = applicationRepository.findByJobIdAndHelperId(jobId, job.getHelper().getId())
+                .orElseThrow(() -> new AppException(ErrorCode.INVALID_PARAM));
 
+        app.setCurrentProgress(JobProgress.PENDING_PAYMENT);
+        applicationRepository.save(app);
+
+        Progress progress = new Progress();
+        progress.setJobApplication(app);
+        progress.setName(JobProgress.PENDING_PAYMENT);
+        progress.setDescription("Thợ đã gủi minh chứng làm việc");
+        progress.setTimestamp(LocalDateTime.now());
+
+        progressRepository.save(progress);
         jobRepository.save(job);
     }
 
@@ -549,11 +561,9 @@ public class JobService {
         Progress progress = new Progress();
         progress.setJobApplication(app);
         progress.setName(JobProgress.COMPLETED);
-
-        // Cộng tiền ở đây
-
         progress.setDescription("Chủ nhà đã xác nhận hoàn thành và thanh toán. Công việc kết thúc.");
         progress.setTimestamp(LocalDateTime.now());
+
         progressRepository.save(progress);
     }
 
