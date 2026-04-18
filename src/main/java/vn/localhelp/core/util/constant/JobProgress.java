@@ -11,7 +11,8 @@ public enum JobProgress {
     ON_THE_WAY("Đang đến"),
     WORKING("Đang làm"),
     PENDING_PAYMENT("Chờ thanh toán"),
-    COMPLETED("Hoàn thành");
+    COMPLETED("Hoàn thành"),
+    CANCELLED("Đã hủy");
 
     private final String description;
 
