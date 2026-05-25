@@ -22,7 +22,21 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
-
+/**
+ * JPA Entity ánh xạ bảng 'reviews' trong MySQL.
+ *
+ * <p>Ràng buộc nghiệp vụ quan trọng:</p>
+ * <ul>
+ *   <li>job_id có UNIQUE constraint → mỗi job chỉ được đánh giá đúng 1 lần.</li>
+ *   <li>job_id nullable=false → mọi review đều phải gắn với 1 job.</li>
+ *   <li>@CreatedDate tự động gán createdAt khi entity được persist lần đầu.</li>
+ *   <li>reviewer LAZY loaded → tránh N+1 khi query danh sách reviews.</li>
+ * </ul>
+ *
+ * <p>Khi reviewer xóa tài khoản, reviewer_id FK có thể thành null (SET NULL)
+ * nên ReviewMapper xử lý null-safe.</p>
+ *
+ */
 @Entity
 @Setter
 @Getter

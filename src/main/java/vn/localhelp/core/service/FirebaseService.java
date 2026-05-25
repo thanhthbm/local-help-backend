@@ -10,14 +10,33 @@ import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-
+/**
+ * Service tương tác với Firebase Admin SDK và Firestore từ phía Backend.
+ *
+ * <p>Hai chức năng chính:</p>
+ * <ul>
+ *   <li>setUserRole() – Gán custom claims (role) lên Firebase Auth cho user.</li>
+ *   <li>updateJobStatusRealtime() – Cập nhật trạng thái job lên Firestore
+ *       để Android nhận callback realtime khi job thay đổi trạng thái.</li>
+ * </ul>
+ *
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class FirebaseService {
 
   private final Firestore firestore;
-
+  /**
+   * Gán custom claim 'role' lên Firebase Authentication cho user.
+   *
+   * <p>Claim này được nhúng vào Firebase ID Token, cho phép backend
+   * đọc role từ decoded token mà không cần query DB thêm lần nào.</p>
+   *
+   * @param uid   Firebase UID của user cần gán role
+   * @param role  Tên role: "USER", "HELPER", "ADMIN"
+   * @throws FirebaseAuthException nếu UID không tồn tại hoặc Firebase lỗi
+   */
   public void setUserRole(String uid, String role) throws FirebaseAuthException {
     Map<String, Object> claims = new HashMap<>();
     claims.put("role", role);
@@ -26,7 +45,17 @@ public class FirebaseService {
   }
 
   /**
-   * Cập nhật status của Job lên Firestore để app nhận callback real-time
+   * Cập nhật trạng thái công việc lên Firestore để Android nhận callback realtime.
+   *
+   * <p>Ghi vào collection 'job_updates', document jobId.toString().
+   * Dùng SetOptions.merge() để chỉ cập nhật fields 'status' và 'updatedAt',
+   * không xóa các fields khác đã có trong document.</p>
+   *
+   * <p>Guard null/blank: nếu jobId hoặc status không hợp lệ, bỏ qua và log warn
+   * thay vì ném exception để không ảnh hưởng luồng nghiệp vụ chính.</p>
+   *
+   * @param jobId   ID của công việc cần cập nhật trạng thái
+   * @param status  Trạng thái mới (vd: "COMPLETED", "CANCELLED")
    */
   public void updateJobStatusRealtime(Long jobId, String status) {
     if (jobId == null || status == null || status.isBlank()) {
