@@ -35,7 +35,16 @@ import vn.localhelp.core.util.CustomUserDetails;
 import vn.localhelp.core.util.FirebaseUtil;
 import vn.localhelp.core.util.annotation.ApiMessage;
 import vn.localhelp.core.util.constant.JobStatus;
-
+/**
+ * REST Controller quản lý toàn bộ vòng đời của công việc (Job) trong LocalHelp.
+ *
+ * <p>Endpoint liên quan đến lịch sử (Hoàng Minh Trọng):</p>
+ * <ul>
+ *   <li>GET /api/jobs/my-jobs  – Việc người dùng đã đăng (là creator).</li>
+ *   <li>GET /api/jobs/my-tasks – Việc người dùng đã nhận/đang làm (là helper).</li>
+ * </ul>
+ *
+ */
 @RestController
 @RequestMapping("/api/jobs")
 @RequiredArgsConstructor
@@ -89,8 +98,18 @@ public class JobController {
   ){
     return ResponseEntity.ok(jobService.getOpenJob(current, pageSize, categoryId, lat, lng));
   }
-
-  @GetMapping("/my-jobs")
+    /**
+     * Lấy danh sách công việc mà user hiện tại đã đăng (với vai trò Creator).
+     *
+     * <p>Lọc theo status nếu có (OPEN/IN_PROGRESS/COMPLETED/CANCELLED).
+     * Nếu không truyền status → trả tất cả jobs của creator.</p>
+     *
+     * <p>Firebase UID được lấy từ SecurityContext qua FirebaseUtil.getCurrentUserUid().</p>
+     *
+     * @param status  (Optional) Trạng thái cần lọc, null = lấy tất cả
+     * @return        List<JobResponse> danh sách việc đã đăng
+     */
+    @GetMapping("/my-jobs")
   @ApiMessage("Fetch my jobs successfully")
   public ResponseEntity<List<JobResponse>> getMyJobs(
       @RequestParam(required = false) JobStatus status
@@ -158,7 +177,18 @@ public class JobController {
 
         return ResponseEntity.ok(result);
     }
-
+    /**
+     * Lấy danh sách công việc mà user hiện tại đã nhận (với vai trò Helper).
+     *
+     * <p>Phân biệt với my-jobs: my-tasks lọc theo helper_id thay vì creator_id.
+     * Kết quả gồm các job đã được creator chấp nhận helper hiện tại.</p>
+     *
+     * @param current   Trang hiện tại (bắt đầu từ 1)
+     * @param pageSize  Số phần tử mỗi trang
+     * @param lat       (Optional) Vĩ độ của user để tính khoảng cách
+     * @param lng       (Optional) Kinh độ của user để tính khoảng cách
+     * @return          ResultPaginationDTO<List<JobResponse>>
+     */
     @GetMapping("/my-tasks")
     @ApiMessage("Lấy danh sách việc đã nhận thành công")
     public ResponseEntity<ResultPaginationDTO<List<JobResponse>>> getMyTasks(

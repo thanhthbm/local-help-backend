@@ -40,6 +40,16 @@ import vn.localhelp.core.util.error.AppException;
 import vn.localhelp.core.util.error.NotFoundException;
 
 import static java.util.stream.Collectors.toList;
+/**
+ * Service xử lý toàn bộ nghiệp vụ liên quan đến Job trong LocalHelp.
+ *
+ * <p>Phần Hoàng Minh Trọng (B22DCCN862) thực hiện:</p>
+ * <ul>
+ *   <li>getMyJobs()  – Lấy danh sách việc đã đăng theo creator.</li>
+ *   <li>getMyTasks() – Lấy danh sách việc đã nhận theo helper.</li>
+ *   <li>reviewHelper() – Tạo đánh giá sau khi job hoàn thành.</li>
+ * </ul>
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -75,7 +85,7 @@ public class JobService {
       List<JobImage> images = createJobRequest.getImageUrls().stream()
           .map(url -> JobImage.builder()
               .imageUrl(url)
-              .imageType(vn.localhelp.core.util.constant.ImageType.REQUEST)
+              .imageType(ImageType.REQUEST)
               .job(job)
               .build())
           .collect(toList());
@@ -241,8 +251,16 @@ public class JobService {
 
     return result;
   }
-
-  public List<JobResponse> getMyJobs(JobStatus jobStatus){
+    /**
+     * Lấy danh sách công việc user đã đăng (creator), có thể lọc theo trạng thái.
+     *
+     * <p>Luồng: lấy Firebase UID từ SecurityContext → tìm User trong DB
+     * → gọi jobRepository.findByCreatorId() hoặc lọc thêm theo status.</p>
+     *
+     * @param jobStatus  (Optional) JobStatus cần lọc, null = lấy tất cả
+     * @return        List<JobResponse> đã map qua JobMapper
+     */
+    public List<JobResponse> getMyJobs(JobStatus jobStatus){
     String uid = SecurityContextHolder.getContext().getAuthentication().getName();
     User currentUser = userRepository.findByFirebaseUid(uid)
         .orElseThrow(() -> new RuntimeException("User not found"));
@@ -358,7 +376,7 @@ public class JobService {
     for (String url : imageUrls) {
       job.getJobImages().add(JobImage.builder()
           .imageUrl(url)
-          .imageType(vn.localhelp.core.util.constant.ImageType.REQUEST)
+          .imageType(ImageType.REQUEST)
           .job(job)
           .build());
     }
@@ -374,7 +392,7 @@ public class JobService {
             JobResponse response = jobMapper.toResponse(job);
             response.setDistance(0.0);
             return response;
-        }).collect(Collectors.toList());
+        }).collect(toList());
 
         ResultPaginationDTO.Meta meta = new ResultPaginationDTO.Meta();
         meta.setPage(page);
@@ -388,8 +406,20 @@ public class JobService {
 
         return result;
     }
-
-  public ResultPaginationDTO<List<JobResponse>> getMyTasks(Long helperId, int page, int size, Double helperLat, Double helperLng) {
+    /**
+     * Lấy danh sách công việc user đã được chấp nhận làm helper, có phân trang.
+     *
+     * <p>Tìm jobs theo helper_id (field helper trong bảng jobs, được set khi creator
+     * accept helper). Nếu lat/lng được cung cấp, tính thêm khoảng cách từ user đến job.</p>
+     *
+     * @param helperId      Firebase UID của user hiện tại
+     * @param page     Số trang (bắt đầu từ 1)
+     * @param size     Số phần tử mỗi trang
+     * @param helperLat      (Optional) Vĩ độ để tính khoảng cách
+     * @param helperLng      (Optional) Kinh độ để tính khoảng cách
+     * @return         ResultPaginationDTO<List<JobResponse>>
+     */
+    public ResultPaginationDTO<List<JobResponse>> getMyTasks(Long helperId, int page, int size, Double helperLat, Double helperLng) {
 
         Pageable pageable = PageRequest.of(page - 1, size, Sort.by("createdAt").descending());
 
@@ -409,7 +439,7 @@ public class JobService {
             }
 
             return response;
-        }).collect(Collectors.toList());
+        }).collect(toList());
 
         ResultPaginationDTO.Meta meta = new ResultPaginationDTO.Meta();
         meta.setPage(page);
@@ -493,7 +523,7 @@ public class JobService {
                         .isCompleted(true)
                         .isCurrent(false)
                         .build()
-        ).collect(Collectors.toList());
+        ).collect(toList());
 
         mapped.getLast().setCurrent(true);
         return mapped;
@@ -618,7 +648,24 @@ public class JobService {
 
         progressRepository.save(progress);
     }
-
+    /**
+     * Tạo đánh giá cho helper sau khi job hoàn thành.
+     *
+     * <p>Điều kiện tiên quyết:</p>
+     * <ol>
+     *   <li>Job phải có trạng thái COMPLETED.</li>
+     *   <li>Job chưa có review (findByJobId trả Optional.empty()).</li>
+     *   <li>Người tạo review phải là creator của job.</li>
+     * </ol>
+     *
+     * <p>Sau khi lưu review, cập nhật reputationScore của helper
+     * bằng AVG rating mới từ reviewRepository.getAverageRatingByRevieweeId().</p>
+     *
+     * @param jobId    ID công việc cần đánh giá
+     * @param currentUserId      Firebase UID của người tạo review (phải là creator)
+     * @param request  ReviewRequest chứa rating (1–5) và comment
+     * @return         ReviewResponse thông tin đánh giá vừa tạo
+     */
     @Transactional
     public void reviewHelper(Long jobId, Long currentUserId, ReviewRequest request) {
         Job job = jobRepository.findById(jobId)

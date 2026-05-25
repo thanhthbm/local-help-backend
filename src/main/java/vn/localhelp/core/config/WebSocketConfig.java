@@ -23,6 +23,19 @@ import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBr
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 import vn.localhelp.core.repository.UserRepository;
+/**
+ * Cấu hình WebSocket STOMP Broker cho hệ thống push notification realtime.
+ *
+ * <p>WebSocket được dùng để gửi thông báo từ server xuống Android (server-push),
+ * ví dụ: thông báo có người ứng tuyển, job được chấp nhận, v.v.</p>
+ *
+ * <p><b>Lưu ý:</b> Tin nhắn chat KHÔNG qua WebSocket này – được xử lý trực tiếp
+ * qua Firebase Firestore SDK trên Android. WebSocket chỉ dùng cho notification.</p>
+ *
+ * <p>@Order(HIGHEST_PRECEDENCE + 99): Đảm bảo filter này chạy trước Spring Security
+ * để xác thực token Firebase tại thời điểm STOMP CONNECT.</p>
+ *
+ */
 
 @Slf4j
 @Configuration
@@ -32,19 +45,33 @@ import vn.localhelp.core.repository.UserRepository;
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
   private final UserRepository userRepository;
-
+  /**
+   * Cấu hình in-memory message broker cho STOMP.
+   *
+   * <p>Broker prefixes: /topic (broadcast), /user (private to user).
+   * Application prefix /app: tất cả message gửi đến server bắt đầu bằng /app.
+   * User destination prefix /user: server gửi về đúng user với /user/{userId}/...</p>
+   */
   @Override
   public void configureMessageBroker(MessageBrokerRegistry config) {
     config.enableSimpleBroker("/topic", "/user");
     config.setApplicationDestinationPrefixes("/app");
     config.setUserDestinationPrefix("/user");
   }
-
+  /**
+   * Đăng ký endpoint WebSocket: /ws-notifications.
+   *
+   * <p>withSockJS() cho phép fallback về HTTP Long-polling nếu WebSocket không khả dụng.
+   * setAllowedOriginPatterns("*") cho phép tất cả origin – cần giới hạn trong production.</p>
+   */
   @Override
   public void registerStompEndpoints(StompEndpointRegistry registry) {
     registry.addEndpoint("/ws-notifications").setAllowedOriginPatterns("*").withSockJS();
   }
-
+  // Xác thực Firebase JWT token khi client gửi STOMP CONNECT frame.
+  // Token được đọc từ STOMP header 'Authorization: Bearer <token>'.
+  // Nếu hợp lệ, gán UsernamePasswordAuthenticationToken vào STOMP session,
+  // cho phép server biết user nào đang kết nối WebSocket.
   @Override
   public void configureClientInboundChannel(ChannelRegistration registration) {
     registration.interceptors(new ChannelInterceptor() {
