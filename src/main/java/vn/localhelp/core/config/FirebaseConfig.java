@@ -19,6 +19,7 @@ public class FirebaseConfig {
   @Value("${firebase.credential.path}")
   private String credentialPath;
 
+  // Khởi tạo Firebase Admin SDK để backend xác thực user và cập nhật mật khẩu trên Firebase.
   @PostConstruct
   public void init() throws IOException {
     if (credentialPath == null || credentialPath.trim().isEmpty()) {
@@ -35,6 +36,7 @@ public class FirebaseConfig {
     }
   }
 
+  // Firestore bean dùng cho các tính năng đồng bộ trạng thái realtime của công việc.
   @Bean
   public Firestore firestore() {
     return FirestoreClient.getFirestore();

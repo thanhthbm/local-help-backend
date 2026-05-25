@@ -26,12 +26,13 @@ public class ForgotPasswordService {
 
     private final JavaMailSender mailSender;
     
-    // In a real production app, use Redis instead of ConcurrentHashMap to scale across instances
+    // Lưu tạm OTP/resetToken theo email cho luồng đổi mật khẩu; production nên thay bằng Redis để scale.
     private final Map<String, String> otpStorage = new ConcurrentHashMap<>();
     private final Map<String, String> resetTokenStorage = new ConcurrentHashMap<>();
     
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
+    // Bước 1 đổi mật khẩu: kiểm tra email trên Firebase, tạo OTP 6 số, lưu tạm và gửi qua email.
     public void sendOtp(String email) {
         try {
             // Validate if user exists on Firebase
@@ -64,6 +65,7 @@ public class ForgotPasswordService {
         }
     }
 
+    // Bước 2 đổi mật khẩu: so khớp OTP, xóa OTP đã dùng và sinh resetToken có thời hạn.
     public String verifyOtp(String email, String otp) {
         String storedOtp = otpStorage.get(email);
         
@@ -84,6 +86,7 @@ public class ForgotPasswordService {
         return resetToken;
     }
 
+    // Bước 3 đổi mật khẩu: xác thực resetToken rồi cập nhật mật khẩu mới trên Firebase Authentication.
     public void resetPassword(String email, String resetToken, String newPassword) {
         String storedToken = resetTokenStorage.get(email);
         

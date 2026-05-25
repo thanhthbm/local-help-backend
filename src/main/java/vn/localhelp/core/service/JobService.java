@@ -55,6 +55,7 @@ public class JobService {
   private final JobMapper jobMapper;
   private final FirebaseService firebaseService;
 
+  // Use case đăng công việc: tạo Job từ request, gán người đăng/danh mục/trạng thái OPEN và lưu ảnh yêu cầu.
   @Transactional
   public JobResponse createJob(String currentFirebaseUid, CreateJobRequest createJobRequest) {
     User creator = userRepository.findByFirebaseUid(currentFirebaseUid)
@@ -86,6 +87,7 @@ public class JobService {
     return jobMapper.toResponse(savedJob);
   }
 
+  // Use case cập nhật công việc: kiểm tra quyền chủ bài đăng, chỉ cho sửa job OPEN và cập nhật các field được gửi lên.
   @Transactional
   public JobResponse updateJob(Long id, String currentFirebaseUid, CreateJobRequest request) {
     Job job = getJobOrThrow(id);
@@ -124,6 +126,7 @@ public class JobService {
     return jobMapper.toResponse(jobRepository.save(job));
   }
 
+  // Use case hủy công việc: chủ bài đăng hủy job OPEN, ghi thời gian hủy và cập nhật tiến độ ứng tuyển liên quan.
   @Transactional
   public void deleteJob(Long id, String currentFirebaseUid) {
       Job job = getJobOrThrow(id);
@@ -254,6 +257,7 @@ public class JobService {
     return jobs.stream().map(jobMapper::toResponse).collect(toList());
   }
 
+  // Lấy chi tiết công việc để frontend/mobile hiển thị hoặc nạp dữ liệu vào form chỉnh sửa.
   public JobResponse getJobById(Long id) {
     Job job = getJobOrThrow(id);
 
@@ -330,17 +334,20 @@ public class JobService {
         .collect(toList());
   }
 
+  // Hàm dùng chung cho các use case job: tìm công việc hoặc báo lỗi nếu không tồn tại.
   private Job getJobOrThrow(Long id) {
     return jobRepository.findById(id)
         .orElseThrow(() -> new NotFoundException("Job not found"));
   }
 
+  // Bảo vệ use case cập nhật/hủy: chỉ Firebase user tạo job mới được phép thay đổi job.
   private void validateCreator(Job job, String currentFirebaseUid) {
     if (job.getCreator() == null || !currentFirebaseUid.equals(job.getCreator().getFirebaseUid())) {
       throw new RuntimeException("You are not allowed to modify this job");
     }
   }
 
+  // Khi cập nhật công việc, thay danh sách ảnh yêu cầu bằng danh sách ảnh Android gửi lên.
   private void replaceJobImages(Job job, List<String> imageUrls) {
     if (job.getJobImages() == null) {
       job.setJobImages(new ArrayList<>());

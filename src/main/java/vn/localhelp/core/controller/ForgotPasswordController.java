@@ -18,6 +18,7 @@ public class ForgotPasswordController {
 
     private final ForgotPasswordService forgotPasswordService;
 
+    // Bước 1 đổi mật khẩu: nhận email từ Android và yêu cầu service gửi OTP.
     @PostMapping("/send-otp")
     @ApiMessage("Gửi mã OTP thành công")
     public ResponseEntity<Void> sendOtp(@RequestParam String email) {
@@ -25,6 +26,7 @@ public class ForgotPasswordController {
         return ResponseEntity.ok().build();
     }
 
+    // Bước 2 đổi mật khẩu: xác thực OTP và trả resetToken cho Android.
     @PostMapping("/verify-otp")
     @ApiMessage("Xác thực OTP thành công")
     public ResponseEntity<Map<String, String>> verifyOtp(
@@ -34,6 +36,7 @@ public class ForgotPasswordController {
         return ResponseEntity.ok(Map.of("resetToken", resetToken));
     }
 
+    // Bước 3 đổi mật khẩu: nhận resetToken và mật khẩu mới để cập nhật trên Firebase.
     @PostMapping("/reset-password")
     @ApiMessage("Đặt lại mật khẩu thành công")
     public ResponseEntity<Void> resetPassword(

@@ -6,6 +6,7 @@ import lombok.Data;
 
 @Data
 @Builder
+// DTO nhận dữ liệu từ Android cho API đăng công việc mới và cập nhật công việc.
 public class CreateJobRequest {
   private String title;
   private String description;

@@ -15,12 +15,14 @@ import java.util.List;
 public interface JobRepository extends JpaRepository<Job, Long>, JpaSpecificationExecutor<Job> {
   long countByHelperIdAndJobStatus(Long helperId, JobStatus status);
 
+  // Truy vấn danh sách công việc đang mở, loại trừ các job do chính user hiện tại đăng.
   @Query("SELECT j FROM Job j "
       + "WHERE j.jobStatus = :status "
       + "AND j.creator.firebaseUid != :currentUid")
   Page<Job> findByJobStatus(@Param("status") JobStatus status, String currentUid, Pageable pageable);
   long countByJobStatus(JobStatus status);
 
+  // Tìm công việc theo vị trí, khoảng cách, danh mục, thời gian và từ khóa cho màn tìm việc.
   @Query(value = "SELECT * FROM jobs j WHERE " +
                    "j.job_status = 'OPEN' " +
                    "AND j.creator_id != :userId " +
@@ -58,6 +60,7 @@ public interface JobRepository extends JpaRepository<Job, Long>, JpaSpecificatio
             Pageable pageable
   );
 
+    // Lấy danh sách bài đăng của người dùng, phục vụ màn quản lý việc đã đăng và sau khi tạo/cập nhật/hủy.
     Page<Job> findByCreatorIdOrderByCreatedAtDesc(Long creatorId, Pageable pageable);
 
     List<Job> findByCreatorIdAndJobStatusAndCreatedAtBetween(Long creatorId, JobStatus status, LocalDateTime start, LocalDateTime end);

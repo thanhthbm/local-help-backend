@@ -33,14 +33,17 @@ import vn.localhelp.core.util.constant.UserStatus;
 @NoArgsConstructor
 @AllArgsConstructor
 @EntityListeners(AuditingEntityListener.class)
+// Entity người dùng; firebaseUid/email liên kết tài khoản backend với Firebase Authentication.
 public class User {
   @Id
   @GeneratedValue(strategy = jakarta.persistence.GenerationType.IDENTITY)
   private Long id;
 
+  // UID từ Firebase, dùng để xác định user hiện tại khi đăng/sửa/hủy công việc.
   @Column(name = "firebase_uid", unique = true, nullable = false, length = 50)
   private String firebaseUid;
 
+  // Email cũng là khóa chính của luồng đổi mật khẩu bằng OTP.
   @Column(nullable = false, unique = true, length = 100)
   private String email;
 
@@ -71,9 +74,11 @@ public class User {
   @Column(nullable = false, length = 20)
   private UserRole role;
 
+  // Các công việc user đã đăng với vai trò chủ việc.
   @OneToMany(mappedBy = "creator", fetch = FetchType.LAZY)
   private List<Job> jobsCreated;
 
+  // Các công việc user đã nhận/thực hiện với vai trò thợ.
   @OneToMany(mappedBy = "helper", fetch = FetchType.LAZY)
   private List<Job> jobsCompleted;
 

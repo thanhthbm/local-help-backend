@@ -43,6 +43,7 @@ public class JobController {
   private final JobService jobService;
   private final JobApplicationService jobApplicationService;
 
+  // Use case đăng công việc: nhận request từ Android, lấy Firebase UID hiện tại và chuyển xuống service.
   @PostMapping
   @ApiMessage("Create a new job successfully")
   public ResponseEntity<JobResponse> createJob(@RequestBody CreateJobRequest createJobRequest){
@@ -50,6 +51,7 @@ public class JobController {
     return ResponseEntity.ok(jobService.createJob(currentFirebaseUid, createJobRequest));
   }
 
+  // Use case cập nhật công việc: chỉ chủ bài đăng hiện tại được phép sửa thông tin công việc.
   @PutMapping("/{id}")
   @ApiMessage("Update job successfully")
   public ResponseEntity<JobResponse> updateJob(
@@ -60,6 +62,7 @@ public class JobController {
     return ResponseEntity.ok(jobService.updateJob(id, currentFirebaseUid, request));
   }
 
+  // Use case hủy công việc: controller gọi service để chuyển trạng thái công việc sang CANCELLED.
   @DeleteMapping("/{id}")
   @ApiMessage("Delete job successfully")
   public ResponseEntity<Void> deleteJob(@PathVariable Long id) {
@@ -106,6 +109,7 @@ public class JobController {
       return ResponseEntity.ok(results);
   }
 
+  // Lấy chi tiết công việc để Android hiển thị và mở form cập nhật.
   @GetMapping("/{id}")
   @ApiMessage("Get job by id")
   public ResponseEntity<JobResponse> getJobById(@PathVariable Long id){

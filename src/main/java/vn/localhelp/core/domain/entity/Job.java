@@ -35,6 +35,7 @@ import vn.localhelp.core.util.constant.JobStatus;
 @NoArgsConstructor
 @Builder
 @EntityListeners(AuditingEntityListener.class)
+// Entity lưu thông tin công việc: dữ liệu chính cho use case đăng, cập nhật và hủy công việc.
 public class Job {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -46,12 +47,14 @@ public class Job {
   private String address;
   private Double latitude;
   private Double longitude;
+  // Trạng thái job dùng để phân biệt OPEN, ACCEPTED, CANCELLED, COMPLETED...
   @Enumerated(EnumType.STRING)
   private JobStatus jobStatus;
 
   @CreatedDate
   private LocalDateTime createdAt;
 
+  // Người tạo job; được dùng để kiểm tra quyền cập nhật/hủy công việc.
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "creator_id")
   private User creator;
@@ -62,12 +65,14 @@ public class Job {
   @JoinColumn(name = "category_id")
   private Category category;
 
+  // Danh sách ảnh mô tả công việc; được tạo mới hoặc thay thế khi Android gửi imageUrls.
   @OneToMany(mappedBy = "job", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<JobImage> jobImages;
 
   @OneToOne(mappedBy = "job", cascade = CascadeType.ALL)
   private Review review;
 
+  // Thời điểm hủy công việc, được set trong use case hủy job.
   @Column(name = "cancel_time")
   private LocalDateTime cancelTime;
 }
