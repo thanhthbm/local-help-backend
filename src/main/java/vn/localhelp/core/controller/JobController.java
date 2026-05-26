@@ -192,6 +192,12 @@ public class JobController {
 
   @PostMapping("/{jobId}/apply")
   @ApiMessage("Gửi yêu cầu nhận việc thành công")
+  /**
+   * API để helper gửi yêu cầu nhận việc vào một công việc cụ thể.
+   *
+   * @param jobId ID công việc muốn nhận
+   * @param currentUser helper hiện tại
+   */
   public void applyForJob(
           @PathVariable Long jobId,
           @AuthenticationPrincipal CustomUserDetails currentUser) {
@@ -249,6 +255,9 @@ public class JobController {
 
     @GetMapping("/{jobId}/applications")
     @ApiMessage("Lấy danh sách thợ ứng tuyển thành công")
+    /**
+     * API để creator lấy danh sách các helper đang ứng tuyển vào công việc.
+     */
     public ResponseEntity<List<ApplicationResponse>> getApplications(
             @PathVariable Long jobId,
             @AuthenticationPrincipal CustomUserDetails currentUser) {
@@ -262,6 +271,9 @@ public class JobController {
 
     @PostMapping("/applications/{applicationId}/accept")
     @ApiMessage("Chọn thợ thành công")
+    /**
+     * API để creator chấp nhận một đơn ứng tuyển cụ thể.
+     */
     public ResponseEntity<Void> acceptApplication(
             @PathVariable Long applicationId,
             @AuthenticationPrincipal CustomUserDetails currentUser) {
@@ -272,6 +284,9 @@ public class JobController {
 
     @PostMapping("/{jobId}/status/moving")
     @ApiMessage("Cập nhật trạng thái đang di chuyển thành công")
+    /**
+     * API để helper báo đang di chuyển tới nơi làm việc.
+     */
     public ResponseEntity<Void> statusMoving(
             @PathVariable Long jobId,
             @AuthenticationPrincipal CustomUserDetails currentUser) {
@@ -282,6 +297,9 @@ public class JobController {
 
     @PostMapping("/{jobId}/status/arrived")
     @ApiMessage("Cập nhật trạng thái đã đến nơi thành công")
+    /**
+     * API để helper báo đã đến nơi và bắt đầu làm việc.
+     */
     public ResponseEntity<Void> statusArrived(
             @PathVariable Long jobId,
             @AuthenticationPrincipal CustomUserDetails currentUser) {
@@ -291,6 +309,9 @@ public class JobController {
     }
 
     @PostMapping("/{jobId}/submit-evidence")
+    /**
+     * API để helper gửi danh sách URL ảnh bằng chứng sau khi hoàn thành việc.
+     */
     public ResponseEntity<Void> submitEvidence(
             @PathVariable Long jobId,
             @RequestBody List<String> imageUrls) {
@@ -301,6 +322,9 @@ public class JobController {
 
     @PostMapping("/{jobId}/remind-payment")
     @ApiMessage("Đã gửi thông báo nhắc nhở khách hàng")
+    /**
+     * API để helper nhắc creator xác nhận thanh toán sau khi đã nộp bằng chứng.
+     */
     public ResponseEntity<Void> remindPayment(
             @PathVariable Long jobId,
             @AuthenticationPrincipal CustomUserDetails currentUser) {
@@ -311,6 +335,9 @@ public class JobController {
 
     @PostMapping("/{jobId}/confirm-payment")
     @ApiMessage("Xác nhận hoàn thành thành công")
+    /**
+     * API để creator xác nhận hoàn thành và thanh toán cho công việc.
+     */
     public ResponseEntity<Void> confirmPayment(
             @PathVariable Long jobId,
             @AuthenticationPrincipal CustomUserDetails currentUser) {
@@ -321,6 +348,9 @@ public class JobController {
 
     @PostMapping("/{jobId}/reviews")
     @ApiMessage("Đánh giá thợ thành công")
+    /**
+     * API để creator gửi đánh giá cho helper sau khi công việc hoàn thành.
+     */
     public ResponseEntity<Void> reviewHelper(
             @PathVariable Long jobId,
             @Valid @RequestBody ReviewRequest request,
@@ -332,6 +362,9 @@ public class JobController {
 
     @GetMapping("/{jobId}/evidence")
     @ApiMessage("Lấy danh sách ảnh bằng chứng thành công")
+    /**
+     * API lấy danh sách ảnh bằng chứng của công việc.
+     */
     public ResponseEntity<List<JobImageResponse>> getJobEvidence(
             @PathVariable Long jobId,
             @AuthenticationPrincipal CustomUserDetails currentUser) {
@@ -341,6 +374,9 @@ public class JobController {
 
     @GetMapping("/{jobId}/review")
     @ApiMessage("Lấy thông tin đánh giá thành công")
+    /**
+     * API lấy đánh giá đã có của công việc.
+     */
     public ResponseEntity<ReviewResponse> getJobReview(@PathVariable Long jobId) {
         return ResponseEntity.ok(jobService.getJobReview(jobId));
     }

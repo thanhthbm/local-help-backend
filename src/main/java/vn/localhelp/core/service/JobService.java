@@ -208,6 +208,13 @@ public class JobService {
       }
   }
 
+  /**
+   * Cho phép một helper nhận trực tiếp một công việc đang ở trạng thái OPEN.
+   *
+   * @param id ID công việc cần nhận
+   * @param currentFirebaseUid Firebase UID của helper hiện tại
+   * @return JobResponse sau khi công việc được gán helper thành công
+   */
   @Transactional
   public JobResponse acceptJob(Long id, String currentFirebaseUid) {
     Job job = getJobOrThrow(id);
@@ -384,7 +391,7 @@ public class JobService {
       result.setMeta(meta);
       result.setResult(dtoJobList);
       return result;
-    }
+  }
 
   public List<JobResponse> getFeaturedJobs() {
     String currentUid = FirebaseUtil.getCurrentUserUid();
@@ -524,6 +531,13 @@ public class JobService {
         return result;
     }
 
+    /**
+     * Lấy thông tin chi tiết một công việc cùng toàn bộ timeline tiến trình.
+     *
+     * @param jobId ID công việc cần xem
+     * @param currentUserId ID người dùng hiện tại
+     * @return JobDetailResponse gồm jobInfo và danh sách ProgressResponse
+     */
     public JobDetailResponse getJobDetail(Long jobId, Long currentUserId) {
         Job job = jobRepository.findById(jobId)
                 .orElseThrow(() -> new AppException(ErrorCode.JOB_NOT_FOUND));
@@ -581,6 +595,12 @@ public class JobService {
                 .build();
     }
 
+    /**
+     * Đọc lịch sử tiến trình của một JobApplication và map sang DTO timeline.
+     *
+     * @param applicationId ID đơn ứng tuyển hoặc nhận việc
+     * @return danh sách ProgressResponse theo thứ tự thời gian tăng dần
+     */
     private List<ProgressResponse> getMappedProgresses(Long applicationId) {
         List<Progress> history = progressRepository.findByJobApplicationIdOrderByTimestampAsc(applicationId);
         if (history.isEmpty()) return new ArrayList<>();
@@ -600,16 +620,25 @@ public class JobService {
     }
 
 
+    /**
+     * Cập nhật trạng thái công việc sang ON_THE_WAY khi helper bắt đầu di chuyển.
+     */
     @Transactional
     public void updateStatusMoving(Long jobId, Long helperId) {
         updateJobAndProgress(jobId, helperId, JobStatus.ON_THE_WAY, "Thợ đang trên đường đến.");
     }
 
+    /**
+     * Cập nhật trạng thái công việc sang WORKING khi helper đã đến nơi.
+     */
     @Transactional
     public void updateStatusArrived(Long jobId, Long helperId) {
         updateJobAndProgress(jobId, helperId, JobStatus.WORKING, "Thợ đã đến nơi và bắt đầu làm việc.");
     }
 
+    /**
+     * Hàm lõi cập nhật trạng thái job và timeline progress cho helper đang thực hiện việc.
+     */
     private void updateJobAndProgress(Long jobId, Long helperId, JobStatus newStatus, String description) {
         Job job = jobRepository.findById(jobId)
                 .orElseThrow(() -> new AppException(ErrorCode.JOB_NOT_FOUND));
@@ -636,6 +665,12 @@ public class JobService {
         progressRepository.save(progress);
     }
 
+    /**
+     * Ghi nhận ảnh bằng chứng sau khi helper hoàn thành công việc.
+     *
+     * @param jobId ID công việc cần nộp bằng chứng
+     * @param imageUrls danh sách URL ảnh bằng chứng
+     */
     @Transactional
     public void submitEvidence(Long jobId, List<String> imageUrls) {
         Job job = jobRepository.findById(jobId)
@@ -670,6 +705,9 @@ public class JobService {
         syncRealtimeStatus(savedJob);
     }
 
+    /**
+     * Kiểm tra điều kiện để helper nhắc creator xác nhận thanh toán.
+     */
     public void remindPayment(Long jobId, Long helperId) {
         Job job = jobRepository.findById(jobId)
                 .orElseThrow(() -> new AppException(ErrorCode.JOB_NOT_FOUND));
@@ -685,6 +723,9 @@ public class JobService {
         User creator = job.getCreator();
     }
 
+    /**
+     * Xác nhận hoàn thành công việc và chốt trạng thái thanh toán từ phía creator.
+     */
     @Transactional
     public void confirmPayment(Long jobId, Long currentUserId) {
         Job job = jobRepository.findById(jobId)
@@ -763,6 +804,9 @@ public class JobService {
         userRepository.save(helper);
     }
 
+    /**
+     * Lấy danh sách ảnh bằng chứng của một công việc cho creator hoặc helper liên quan.
+     */
     public List<JobImageResponse> getJobEvidence(Long jobId, Long currentUserId) {
         Job job = jobRepository.findById(jobId)
                 .orElseThrow(() -> new AppException(ErrorCode.JOB_NOT_FOUND));
@@ -782,6 +826,9 @@ public class JobService {
                 .toList();
     }
 
+    /**
+     * Lấy đánh giá đã được tạo cho một công việc.
+     */
     public ReviewResponse getJobReview(Long jobId) {
         jobRepository.findById(jobId)
                 .orElseThrow(() -> new AppException(ErrorCode.JOB_NOT_FOUND));
@@ -799,6 +846,9 @@ public class JobService {
                 .build();
     }
 
+    /**
+     * Đồng bộ trạng thái công việc sang Firestore để app có thể theo dõi realtime.
+     */
     private void syncRealtimeStatus(Job job) {
         firebaseService.updateJobStatusRealtime(job.getId(), job.getJobStatus().name());
     }

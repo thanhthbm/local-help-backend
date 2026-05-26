@@ -19,6 +19,15 @@ import vn.localhelp.core.util.error.AppException;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * Service xử lý luồng ứng tuyển và chấp nhận thợ cho một công việc.
+ *
+ * Các nghiệp vụ chính:
+ * - helper gửi yêu cầu nhận việc;
+ * - creator xem danh sách thợ đã ứng tuyển;
+ * - creator chấp nhận một thợ và từ chối các đơn còn lại;
+ * - ghi lại timeline tiến trình ban đầu cho từng application.
+ */
 @Service
 public class JobApplicationService {
     private final JobRepository jobRepository;
@@ -77,6 +86,13 @@ public class JobApplicationService {
         progressRepository.save(progress);
     }
 
+    /**
+     * Lấy danh sách các helper đang ở trạng thái APPLIED cho một công việc.
+     *
+     * @param jobId ID công việc cần xem danh sách ứng tuyển
+     * @param currentUserId ID creator hiện tại
+     * @return danh sách ApplicationResponse để phía app hiển thị
+     */
     public List<ApplicationResponse> getApplicationsForJob(Long jobId, Long currentUserId) {
         Job job = jobRepository.findById(jobId)
                 .orElseThrow(() -> new AppException(ErrorCode.JOB_NOT_FOUND));
@@ -101,6 +117,19 @@ public class JobApplicationService {
         }).toList();
     }
 
+    /**
+     * Chấp nhận một đơn ứng tuyển và từ chối toàn bộ đơn còn lại của cùng công việc.
+     *
+     * <p>Sau khi chấp nhận:
+     * - job.helper được gán theo helper của đơn được chọn;
+     * - jobStatus chuyển sang ACCEPTED;
+     * - application được chọn chuyển sang ACCEPTED;
+     * - các application khác chuyển sang REJECTED;
+     * - mỗi thay đổi đều có thêm bản ghi Progress tương ứng.</p>
+     *
+     * @param applicationId ID đơn ứng tuyển được chọn
+     * @param currentUserId ID creator hiện tại
+     */
     @Transactional
     public void acceptHelper(Long applicationId, Long currentUserId) {
         JobApplication acceptedApp = applicationRepository.findById(applicationId)
