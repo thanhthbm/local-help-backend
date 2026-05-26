@@ -33,6 +33,15 @@ public interface JobApplicationRepository extends JpaRepository<JobApplication, 
      * @return          Page<JobApplication>
      */
     Page<JobApplication> findByHelperId(Long helperId, Pageable pageable);
+    /**
+     * Tìm một đơn ứng tuyển cụ thể theo job và helper.
+     *
+     * <p>Dùng khi cập nhật tiến trình công việc hoặc lấy timeline của helper đã ứng tuyển.</p>
+     *
+     * @param jobId    ID công việc
+     * @param helperId ID helper
+     * @return         Optional<JobApplication>, rỗng nếu helper chưa ứng tuyển job này
+     */
     Optional<JobApplication> findByJobIdAndHelperId(Long jobId, Long helperId);
     /**
      * Lấy danh sách ứng tuyển theo jobId và trạng thái hiện tại.
@@ -43,5 +52,14 @@ public interface JobApplicationRepository extends JpaRepository<JobApplication, 
      * @return                 List<JobApplication>
      */
     List<JobApplication> findByJobIdAndCurrentProgress(Long jobId, JobProgress currentProgress);
+    /**
+     * Lấy toàn bộ đơn ứng tuyển của một công việc.
+     *
+     * <p>Được dùng trong chức năng hủy công việc để cập nhật các application liên quan
+     * sang trạng thái CANCELLED.</p>
+     *
+     * @param jobId ID công việc
+     * @return      Danh sách JobApplication của công việc
+     */
     List<JobApplication> findByJobId(Long jobId);
 }

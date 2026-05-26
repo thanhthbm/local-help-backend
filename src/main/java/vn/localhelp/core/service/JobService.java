@@ -65,7 +65,24 @@ public class JobService {
   private final JobMapper jobMapper;
   private final FirebaseService firebaseService;
 
-  // Use case đăng công việc: tạo Job từ request, gán người đăng/danh mục/trạng thái OPEN và lưu ảnh yêu cầu.
+  /**
+   * Tạo công việc mới cho user đang đăng nhập.
+   *
+   * <p>Luồng xử lý:</p>
+   * <ol>
+   *   <li>Tìm creator theo Firebase UID.</li>
+   *   <li>Tìm category theo categoryId trong request.</li>
+   *   <li>Map CreateJobRequest sang Job entity.</li>
+   *   <li>Gán creator, category, trạng thái OPEN và createdAt.</li>
+   *   <li>Tạo danh sách JobImage loại REQUEST từ các URL ảnh Android đã upload.</li>
+   *   <li>Lưu Job xuống database và map sang JobResponse.</li>
+   * </ol>
+   *
+   * @param currentFirebaseUid Firebase UID của user đăng công việc
+   * @param createJobRequest   DTO chứa thông tin công việc cần tạo
+   * @return                   JobResponse của công việc vừa lưu
+   * @throws RuntimeException  nếu không tìm thấy user hoặc category
+   */
   @Transactional
   public JobResponse createJob(String currentFirebaseUid, CreateJobRequest createJobRequest) {
     User creator = userRepository.findByFirebaseUid(currentFirebaseUid)
@@ -97,7 +114,19 @@ public class JobService {
     return jobMapper.toResponse(savedJob);
   }
 
-  // Use case cập nhật công việc: kiểm tra quyền chủ bài đăng, chỉ cho sửa job OPEN và cập nhật các field được gửi lên.
+  /**
+   * Cập nhật công việc đã đăng.
+   *
+   * <p>Chỉ creator của job được phép cập nhật và chỉ job ở trạng thái OPEN mới được sửa.
+   * Các trường trong request được xử lý theo kiểu partial update: field null sẽ giữ nguyên
+   * giá trị cũ. Nếu imageUrls khác null, service thay toàn bộ danh sách ảnh REQUEST cũ.</p>
+   *
+   * @param id                 ID công việc cần cập nhật
+   * @param currentFirebaseUid Firebase UID của user đang thao tác
+   * @param request            DTO chứa dữ liệu cập nhật
+   * @return                   JobResponse sau khi cập nhật
+   * @throws RuntimeException  nếu user không có quyền, job không OPEN hoặc category không tồn tại
+   */
   @Transactional
   public JobResponse updateJob(Long id, String currentFirebaseUid, CreateJobRequest request) {
     Job job = getJobOrThrow(id);
@@ -136,7 +165,17 @@ public class JobService {
     return jobMapper.toResponse(jobRepository.save(job));
   }
 
-  // Use case hủy công việc: chủ bài đăng hủy job OPEN, ghi thời gian hủy và cập nhật tiến độ ứng tuyển liên quan.
+  /**
+   * Hủy công việc đã đăng.
+   *
+   * <p>Hệ thống chỉ chuyển trạng thái job sang CANCELLED thay vì xóa bản ghi. Khi job có
+   * JobApplication liên quan, service cập nhật currentProgress của từng application sang
+   * CANCELLED và ghi thêm một bản Progress để lưu lịch sử hủy.</p>
+   *
+   * @param id                 ID công việc cần hủy
+   * @param currentFirebaseUid Firebase UID của creator đang thao tác
+   * @throws RuntimeException  nếu user không có quyền hoặc job không còn ở trạng thái OPEN
+   */
   @Transactional
   public void deleteJob(Long id, String currentFirebaseUid) {
       Job job = getJobOrThrow(id);
@@ -275,7 +314,15 @@ public class JobService {
     return jobs.stream().map(jobMapper::toResponse).collect(toList());
   }
 
-  // Lấy chi tiết công việc để frontend/mobile hiển thị hoặc nạp dữ liệu vào form chỉnh sửa.
+  /**
+   * Lấy thông tin công việc theo ID.
+   *
+   * <p>Dùng cho màn chi tiết công việc và màn chỉnh sửa để nạp dữ liệu cũ vào form.</p>
+   *
+   * @param id ID công việc cần lấy
+   * @return   JobResponse đã map từ Job entity
+   * @throws NotFoundException nếu công việc không tồn tại
+   */
   public JobResponse getJobById(Long id) {
     Job job = getJobOrThrow(id);
 
@@ -352,20 +399,43 @@ public class JobService {
         .collect(toList());
   }
 
-  // Hàm dùng chung cho các use case job: tìm công việc hoặc báo lỗi nếu không tồn tại.
+  /**
+   * Tìm Job theo ID hoặc ném lỗi nếu không tồn tại.
+   *
+   * @param id ID công việc cần tìm
+   * @return   Job entity tương ứng
+   * @throws NotFoundException nếu không tìm thấy công việc
+   */
   private Job getJobOrThrow(Long id) {
     return jobRepository.findById(id)
         .orElseThrow(() -> new NotFoundException("Job not found"));
   }
 
-  // Bảo vệ use case cập nhật/hủy: chỉ Firebase user tạo job mới được phép thay đổi job.
+  /**
+   * Kiểm tra user hiện tại có phải creator của job hay không.
+   *
+   * <p>Được dùng trong các use case thay đổi dữ liệu nhạy cảm như cập nhật và hủy công việc.</p>
+   *
+   * @param job                Job cần kiểm tra quyền sở hữu
+   * @param currentFirebaseUid Firebase UID của user đang thao tác
+   * @throws RuntimeException  nếu job không có creator hoặc user hiện tại không phải creator
+   */
   private void validateCreator(Job job, String currentFirebaseUid) {
     if (job.getCreator() == null || !currentFirebaseUid.equals(job.getCreator().getFirebaseUid())) {
       throw new RuntimeException("You are not allowed to modify this job");
     }
   }
 
-  // Khi cập nhật công việc, thay danh sách ảnh yêu cầu bằng danh sách ảnh Android gửi lên.
+  /**
+   * Thay thế danh sách ảnh yêu cầu của công việc.
+   *
+   * <p>Do quan hệ Job - JobImage bật orphanRemoval, việc clear danh sách ảnh cũ sẽ làm
+   * Hibernate xóa các JobImage không còn thuộc job. Sau đó service tạo JobImage mới từ
+   * các URL Android gửi lên.</p>
+   *
+   * @param job       Job cần thay ảnh
+   * @param imageUrls Danh sách URL ảnh mới
+   */
   private void replaceJobImages(Job job, List<String> imageUrls) {
     if (job.getJobImages() == null) {
       job.setJobImages(new ArrayList<>());

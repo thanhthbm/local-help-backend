@@ -19,12 +19,6 @@ import vn.localhelp.core.domain.response.job.JobResponse;
  */
 @Mapper(componentModel = "spring", uses = {UserMapper.class, CategoryMapper.class})
 public interface JobMapper {
-  @Mapping(target = "id", ignore = true)
-  @Mapping(target = "createdAt", ignore = true)
-  @Mapping(target = "jobStatus", ignore = true)
-  @Mapping(target = "creator", ignore = true)
-  @Mapping(target = "category", ignore = true)
-  @Mapping(target = "jobImages", ignore = true)
   /**
    * Chuyển CreateJobRequest sang Job entity để lưu DB.
    *
@@ -35,17 +29,18 @@ public interface JobMapper {
    *   <li>creator, category – lookup từ DB sau khi map.</li>
    *   <li>jobImages – xử lý riêng vì có relationship phức tạp.</li>
    * </ul>
+   *
+   * @param createJobRequest DTO chứa dữ liệu tạo/cập nhật công việc
+   * @return                 Job entity chưa gán các quan hệ xử lý ở service
    */
+  @Mapping(target = "id", ignore = true)
+  @Mapping(target = "createdAt", ignore = true)
+  @Mapping(target = "jobStatus", ignore = true)
+  @Mapping(target = "creator", ignore = true)
+  @Mapping(target = "category", ignore = true)
+  @Mapping(target = "jobImages", ignore = true)
   Job toEntity(CreateJobRequest createJobRequest);
 
-  @Mapping(source = "jobStatus", target = "status")
-  @Mapping(source = "jobImages", target = "images", qualifiedByName = "mapJobImagesToStrings")
-  @Mapping(source = "category.name", target = "categoryName")
-  @Mapping(source = "category.iconUrl", target = "categoryIcon")
-  @Mapping(source = "creator.fullName", target = "creatorName")
-  @Mapping(source = "creator.id", target = "creatorId")
-  @Mapping(source = "creator.avatarUrl", target = "creatorAvatar")
-  @Mapping(source = "creator.reputationScore", target = "creatorRating")
   /**
    * Chuyển Job entity sang JobResponse DTO trả về client.
    *
@@ -56,7 +51,18 @@ public interface JobMapper {
    *   <li>category.name → categoryName, category.iconUrl → categoryIcon.</li>
    *   <li>creator.fullName/id/avatarUrl/reputationScore → creatorName/Id/Avatar/Rating.</li>
    * </ul>
+   *
+   * @param job Job entity cần chuyển đổi
+   * @return    JobResponse DTO trả về Android
    */
+  @Mapping(source = "jobStatus", target = "status")
+  @Mapping(source = "jobImages", target = "images", qualifiedByName = "mapJobImagesToStrings")
+  @Mapping(source = "category.name", target = "categoryName")
+  @Mapping(source = "category.iconUrl", target = "categoryIcon")
+  @Mapping(source = "creator.fullName", target = "creatorName")
+  @Mapping(source = "creator.id", target = "creatorId")
+  @Mapping(source = "creator.avatarUrl", target = "creatorAvatar")
+  @Mapping(source = "creator.reputationScore", target = "creatorRating")
   JobResponse toResponse(Job job);
   /**
    * Chuyển List<JobImage> entity sang List<String> (chỉ lấy imageUrl).

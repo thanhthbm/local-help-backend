@@ -52,7 +52,16 @@ public class JobController {
   private final JobService jobService;
   private final JobApplicationService jobApplicationService;
 
-  // Use case đăng công việc: nhận request từ Android, lấy Firebase UID hiện tại và chuyển xuống service.
+  /**
+   * Tạo mới công việc từ dữ liệu Android gửi lên.
+   *
+   * <p>Controller lấy Firebase UID của user hiện tại qua {@link FirebaseUtil#getCurrentUserUid()},
+   * sau đó chuyển request xuống service để xử lý nghiệp vụ tạo job, gán creator, category,
+   * trạng thái OPEN và danh sách ảnh.</p>
+   *
+   * @param createJobRequest DTO chứa thông tin công việc cần đăng
+   * @return                 JobResponse của công việc vừa được tạo
+   */
   @PostMapping
   @ApiMessage("Create a new job successfully")
   public ResponseEntity<JobResponse> createJob(@RequestBody CreateJobRequest createJobRequest){
@@ -60,7 +69,16 @@ public class JobController {
     return ResponseEntity.ok(jobService.createJob(currentFirebaseUid, createJobRequest));
   }
 
-  // Use case cập nhật công việc: chỉ chủ bài đăng hiện tại được phép sửa thông tin công việc.
+  /**
+   * Cập nhật thông tin công việc đã đăng.
+   *
+   * <p>Chỉ creator của công việc được phép cập nhật. Service sẽ kiểm tra quyền sở hữu,
+   * kiểm tra job còn ở trạng thái OPEN và chỉ cập nhật các trường được gửi trong request.</p>
+   *
+   * @param id      ID công việc cần cập nhật
+   * @param request DTO chứa dữ liệu mới của công việc
+   * @return        JobResponse sau khi cập nhật thành công
+   */
   @PutMapping("/{id}")
   @ApiMessage("Update job successfully")
   public ResponseEntity<JobResponse> updateJob(
@@ -71,7 +89,15 @@ public class JobController {
     return ResponseEntity.ok(jobService.updateJob(id, currentFirebaseUid, request));
   }
 
-  // Use case hủy công việc: controller gọi service để chuyển trạng thái công việc sang CANCELLED.
+  /**
+   * Hủy công việc đã đăng.
+   *
+   * <p>API này không xóa vật lý bản ghi trong database. Service chuyển jobStatus sang
+   * CANCELLED, ghi cancelTime và cập nhật tiến trình của các JobApplication liên quan.</p>
+   *
+   * @param id ID công việc cần hủy
+   * @return   HTTP 204 No Content nếu hủy thành công
+   */
   @DeleteMapping("/{id}")
   @ApiMessage("Delete job successfully")
   public ResponseEntity<Void> deleteJob(@PathVariable Long id) {
@@ -128,7 +154,15 @@ public class JobController {
       return ResponseEntity.ok(results);
   }
 
-  // Lấy chi tiết công việc để Android hiển thị và mở form cập nhật.
+  /**
+   * Lấy thông tin chi tiết của một công việc.
+   *
+   * <p>Được Android dùng để hiển thị màn chi tiết và nạp dữ liệu cũ vào form khi
+   * creator chỉnh sửa công việc.</p>
+   *
+   * @param id ID công việc cần lấy
+   * @return   JobResponse chứa thông tin hiện tại của công việc
+   */
   @GetMapping("/{id}")
   @ApiMessage("Get job by id")
   public ResponseEntity<JobResponse> getJobById(@PathVariable Long id){

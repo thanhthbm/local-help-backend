@@ -21,37 +21,22 @@ import java.util.List;
 public interface JobRepository extends JpaRepository<Job, Long>, JpaSpecificationExecutor<Job> {
   long countByHelperIdAndJobStatus(Long helperId, JobStatus status);
 
-  // Truy vấn danh sách công việc đang mở, loại trừ các job do chính user hiện tại đăng.
+  /**
+   * Lấy danh sách công việc theo trạng thái, loại trừ các job do user hiện tại đăng.
+   *
+   * <p>Dùng cho màn danh sách việc để helper không nhìn thấy công việc do chính mình tạo.</p>
+   *
+   * @param status     Trạng thái công việc cần lọc
+   * @param currentUid Firebase UID của user hiện tại
+   * @param pageable   Thông tin phân trang
+   * @return           Page<Job> kết quả phân trang
+   */
   @Query("SELECT j FROM Job j "
       + "WHERE j.jobStatus = :status "
       + "AND j.creator.firebaseUid != :currentUid")
   Page<Job> findByJobStatus(@Param("status") JobStatus status, String currentUid, Pageable pageable);
   long countByJobStatus(JobStatus status);
 
-  // Tìm công việc theo vị trí, khoảng cách, danh mục, thời gian và từ khóa cho màn tìm việc.
-  @Query(value = "SELECT * FROM jobs j WHERE " +
-                   "j.job_status = 'OPEN' " +
-                   "AND j.creator_id != :userId " +
-                   "AND j.price >= :minPrice " +
-                   "AND (:hasCategory = 0 OR j.category_id IN (:categoryIds)) " +
-                   "AND (:startTime IS NULL OR j.created_at >= :startTime) " +
-                   "AND (:endTime IS NULL OR j.created_at <= :endTime) " +
-                   "AND (:keyword IS NULL OR :keyword = '' OR j.title LIKE CONCAT('%', :keyword, '%') " +
-                   "OR j.description LIKE CONCAT('%', :keyword, '%')) " +
-
-                   "AND ST_Distance_Sphere(POINT(j.longitude, j.latitude), POINT(:userLng, :userLat)) <= (:maxDistance * 1000) " +
-                   "ORDER BY ST_Distance_Sphere(POINT(j.longitude, j.latitude), POINT(:userLng, :userLat)) ASC",
-            countQuery = "SELECT count(*) FROM jobs j WHERE " +
-                    "j.job_status = 'OPEN' " +
-                    "AND j.creator_id != :userId " +
-                    "AND j.price >= :minPrice " +
-                    "AND (:hasCategory = 0 OR j.category_id IN (:categoryIds)) " +
-                    "AND (:startTime IS NULL OR j.created_at >= :startTime) " +
-                    "AND (:endTime IS NULL OR j.created_at <= :endTime) " +
-                    "AND (:keyword IS NULL OR :keyword = '' OR j.title LIKE CONCAT('%', :keyword, '%') " +
-                    "OR j.description LIKE CONCAT('%', :keyword, '%')) " +
-                    "AND ST_Distance_Sphere(POINT(j.longitude, j.latitude), POINT(:userLng, :userLat)) <= (:maxDistance * 1000) ",
-            nativeQuery = true)
   /**
    * Tìm kiếm jobs trong bán kính địa lý, lọc theo nhiều điều kiện.
    *
@@ -75,6 +60,29 @@ public interface JobRepository extends JpaRepository<Job, Long>, JpaSpecificatio
    * @param pageable    Thông tin phân trang
    * @return            Page<Job> kết quả phân trang
    */
+  @Query(value = "SELECT * FROM jobs j WHERE " +
+                   "j.job_status = 'OPEN' " +
+                   "AND j.creator_id != :userId " +
+                   "AND j.price >= :minPrice " +
+                   "AND (:hasCategory = 0 OR j.category_id IN (:categoryIds)) " +
+                   "AND (:startTime IS NULL OR j.created_at >= :startTime) " +
+                   "AND (:endTime IS NULL OR j.created_at <= :endTime) " +
+                   "AND (:keyword IS NULL OR :keyword = '' OR j.title LIKE CONCAT('%', :keyword, '%') " +
+                   "OR j.description LIKE CONCAT('%', :keyword, '%')) " +
+
+                   "AND ST_Distance_Sphere(POINT(j.longitude, j.latitude), POINT(:userLng, :userLat)) <= (:maxDistance * 1000) " +
+                   "ORDER BY ST_Distance_Sphere(POINT(j.longitude, j.latitude), POINT(:userLng, :userLat)) ASC",
+            countQuery = "SELECT count(*) FROM jobs j WHERE " +
+                    "j.job_status = 'OPEN' " +
+                    "AND j.creator_id != :userId " +
+                    "AND j.price >= :minPrice " +
+                    "AND (:hasCategory = 0 OR j.category_id IN (:categoryIds)) " +
+                    "AND (:startTime IS NULL OR j.created_at >= :startTime) " +
+                    "AND (:endTime IS NULL OR j.created_at <= :endTime) " +
+                    "AND (:keyword IS NULL OR :keyword = '' OR j.title LIKE CONCAT('%', :keyword, '%') " +
+                    "OR j.description LIKE CONCAT('%', :keyword, '%')) " +
+                   "AND ST_Distance_Sphere(POINT(j.longitude, j.latitude), POINT(:userLng, :userLat)) <= (:maxDistance * 1000) ",
+            nativeQuery = true)
   Page<Job> searchJobsNearby(
             @Param("userId") Long userId,
             @Param("userLat") Double userLat,
