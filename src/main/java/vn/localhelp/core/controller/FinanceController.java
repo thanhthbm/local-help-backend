@@ -16,6 +16,12 @@ public class FinanceController {
 
     private final FinanceService financeService;
 
+    /**
+     * Lấy thống kê tổng quan thu/chi của người dùng trong một tháng.
+     *
+     * type = "spending" nghĩa là thống kê các job user tạo và đã hoàn thành.
+     * type = "earning" nghĩa là thống kê các job user làm helper và đã hoàn thành.
+     */
     @GetMapping("/overview")
     @ApiMessage("Lấy thống kê tổng quan thành công")
     public ResponseEntity<FinanceOverviewResponse> getFinanceOverview(
@@ -27,6 +33,12 @@ public class FinanceController {
         return ResponseEntity.ok(financeService.getFinanceOverview(currentUid, type, month, year));
     }
 
+    /**
+     * Lấy thống kê chi tiết của một danh mục trong tháng.
+     *
+     * API này phục vụ màn CategoryDetailScreen trên app sau khi người dùng
+     * bấm vào một dòng danh mục trong màn thống kê.
+     */
     @GetMapping("/categories/{categoryId}/details")
     @ApiMessage("Lấy chi tiết danh mục thành công")
     public ResponseEntity<CategoryDetailResponse> getCategoryDetails(

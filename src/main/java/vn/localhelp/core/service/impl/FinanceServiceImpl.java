@@ -23,6 +23,13 @@ public class FinanceServiceImpl implements FinanceService {
     private final JobRepository jobRepository;
     private final UserRepository userRepository;
 
+    /**
+     * Tính dữ liệu tổng quan cho màn thống kê thu/chi.
+     *
+     * Hàm lấy user hiện tại từ Firebase UID, lọc job COMPLETED theo tháng,
+     * so sánh với tháng trước, rồi gom dữ liệu thành biểu đồ tuần, danh mục
+     * và danh sách giao dịch gần đây.
+     */
     @Override
     public FinanceOverviewResponse getFinanceOverview(String currentUid, String type, int month, int year) {
         User user = userRepository.findByFirebaseUid(currentUid)
@@ -70,6 +77,12 @@ public class FinanceServiceImpl implements FinanceService {
                 .build();
     }
 
+    /**
+     * Tính dữ liệu chi tiết của một danh mục trong màn thống kê.
+     *
+     * Sau khi lọc theo type và tháng, dữ liệu được lọc tiếp theo categoryId,
+     * rồi gom nhóm phụ theo title vì hệ thống hiện chưa có bảng sub-category riêng.
+     */
     @Override
     public CategoryDetailResponse getCategoryDetails(String currentUid, Long categoryId, String type, int month, int year) {
         User user = userRepository.findByFirebaseUid(currentUid)
@@ -109,6 +122,11 @@ public class FinanceServiceImpl implements FinanceService {
                 .build();
     }
 
+    /**
+     * Chọn tập job theo vai trò của user trong giao dịch.
+     *
+     * earning: user là helper nhận tiền. spending: user là creator trả tiền.
+     */
     private List<Job> getJobsByType(Long userId, String type, LocalDateTime start, LocalDateTime end) {
         if ("earning".equalsIgnoreCase(type)) {
             return jobRepository.findByHelperIdAndJobStatusAndCreatedAtBetween(userId, JobStatus.COMPLETED, start, end);
@@ -117,6 +135,9 @@ public class FinanceServiceImpl implements FinanceService {
         }
     }
 
+    /**
+     * Chuẩn hóa tổng tiền theo 4 tuần trong tháng thành giá trị 0..1 để app vẽ bar chart.
+     */
     private List<Double> calculateWeeklyChart(List<Job> jobs, LocalDateTime startOfMonth, LocalDateTime endOfMonth) {
         double week1 = 0, week2 = 0, week3 = 0, week4 = 0;
         int daysInMonth = endOfMonth.getDayOfMonth();
@@ -136,6 +157,9 @@ public class FinanceServiceImpl implements FinanceService {
         return Arrays.asList(week1 / max, week2 / max, week3 / max, week4 / max);
     }
 
+    /**
+     * Gom job theo danh mục và tính tỷ trọng từng danh mục trên tổng thu/chi.
+     */
     private List<CategoryItemDTO> calculateTopCategories(List<Job> jobs, double totalAmount) {
         Map<Long, List<Job>> grouped = jobs.stream()
                 .filter(j -> j.getCategory() != null)
@@ -163,6 +187,11 @@ public class FinanceServiceImpl implements FinanceService {
         return result;
     }
 
+    /**
+     * Tạo nhóm phụ cho màn chi tiết danh mục.
+     *
+     * Vì chưa có entity SubCategory, hệ thống tạm nhóm các job theo title.
+     */
     private List<SubCategoryDTO> calculateSubCategories(List<Job> jobs, double totalAmount) {
         // Since there is no explicit sub-category, we group by job title to simulate sub-categories.
         Map<String, List<Job>> grouped = jobs.stream()
@@ -190,6 +219,9 @@ public class FinanceServiceImpl implements FinanceService {
         return result;
     }
 
+    /**
+     * Chuyển danh sách job thành các dòng giao dịch gần đây hiển thị trên app.
+     */
     private List<TransactionItemDTO> mapToRecentTransactions(List<Job> jobs) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd 'Th'MM, HH:mm");
         return jobs.stream()

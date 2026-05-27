@@ -28,6 +28,12 @@ import vn.localhelp.core.util.constant.UserRole;
 public class FirebaseAuthFilter extends OncePerRequestFilter {
   private final UserRepository userRepository;
 
+  /**
+   * Xác thực Firebase ID token trên header Authorization.
+   *
+   * Nếu token hợp lệ, filter nạp CustomUserDetails và role vào SecurityContext
+   * để controller/service phía sau biết user hiện tại và kiểm tra @PreAuthorize.
+   */
   @Override
   protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response,
       @NonNull FilterChain filterChain) throws ServletException, IOException {
@@ -38,6 +44,7 @@ public class FirebaseAuthFilter extends OncePerRequestFilter {
       log.info("Auth Token found for {} {}", request.getMethod(), request.getRequestURI());
 
       try {
+        // API ngoài Firebase Admin SDK: xác minh token do app/admin gửi lên.
         FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(token);
         String uid = decodedToken.getUid();
         String email = decodedToken.getEmail();

@@ -19,6 +19,12 @@ public class CloudinaryService {
     @Value("${cloudinary.upload-preset}")
     private String uploadPreset;
 
+    /**
+     * Upload ảnh lên Cloudinary và trả về secure URL.
+     *
+     * Hàm này là điểm gọi API ngoài của backend, hiện được dùng khi client gửi
+     * avatar dạng MultipartFile thay vì gửi sẵn avatarUrl.
+     */
     public String uploadImage(MultipartFile file) throws IOException {
         Map<?, ?> uploadResult = cloudinary.uploader().upload(file.getBytes(),
                 ObjectUtils.asMap(

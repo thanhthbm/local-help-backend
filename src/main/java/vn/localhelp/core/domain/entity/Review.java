@@ -32,9 +32,11 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @EntityListeners(AuditingEntityListener.class)
 @Table(name = "reviews")
 public class Review {
+  /** Khóa chính của đánh giá. */
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
+  /** Điểm đánh giá dùng để tính averageRating trên hồ sơ. */
   private Integer rating;
   @Column(columnDefinition = "TEXT")
   private String comment;
@@ -42,14 +44,17 @@ public class Review {
   @CreatedDate
   private LocalDateTime createdAt;
 
+  /** Job được đánh giá, mỗi job chỉ có một review. */
   @OneToOne
   @JoinColumn(name = "job_id", nullable = false)
   private Job job;
 
+  /** Người viết đánh giá. */
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "reviewer_id")
   private User reviewer;
 
+  /** Người nhận đánh giá; hồ sơ dùng trường này để đếm và tính điểm trung bình. */
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "reviewee_id")
   private User reviewee;

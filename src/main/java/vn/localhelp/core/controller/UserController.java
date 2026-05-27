@@ -25,6 +25,12 @@ import java.util.List;
 public class UserController {
   private final UserService userService;
 
+  /**
+   * Lấy hồ sơ của người dùng đang đăng nhập.
+   *
+   * UID được lấy từ SecurityContext sau khi FirebaseAuthFilter xác thực Firebase token.
+   * API này phục vụ màn hình hồ sơ cá nhân trong mobile app.
+   */
   @GetMapping("/me")
   @ApiMessage("Lấy thông tin hồ sơ thành công")
   public ResponseEntity<UserResponse> getProfile() {
@@ -32,12 +38,24 @@ public class UserController {
     return ResponseEntity.ok(userService.getMyProfile(currentUid));
   }
 
+  /**
+   * Lấy hồ sơ công khai của một người dùng theo id.
+   *
+   * Mobile app dùng API này khi xem hồ sơ của chính mình hoặc hồ sơ người khác.
+   */
   @GetMapping("/{id}")
   @ApiMessage("Lấy thông tin người dùng thành công")
   public ResponseEntity<UserResponse> getUserById(@PathVariable Long id) {
     return ResponseEntity.ok(userService.getUserById(id));
   }
 
+  /**
+   * Cập nhật hồ sơ của người dùng đang đăng nhập.
+   *
+   * Request dùng multipart/form-data để hỗ trợ cả dữ liệu JSON ở part "data"
+   * và file avatar ở part "avatar". App hiện upload ảnh lên Cloudinary trước,
+   * sau đó gửi avatarUrl trong JSON; phần file vẫn được giữ để tương thích.
+   */
   @PutMapping(value = "/me", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   @ApiMessage("Cập nhật hồ sơ thành công")
   public ResponseEntity<UserResponse> updateProfile(

@@ -21,6 +21,13 @@ public class AuthService {
   private final UserRepository userRepository;
   private final UserMapper userMapper;
 
+  /**
+   * Tạo hoặc cập nhật user nội bộ từ Firebase user.
+   *
+   * Đăng ký tài khoản diễn ra ở Firebase phía client. Khi người dùng đăng nhập,
+   * backend lấy thông tin Firebase bằng uid, rồi upsert bảng users để các module
+   * hồ sơ, công việc, thống kê có userId nội bộ để liên kết dữ liệu.
+   */
   @Transactional
   public UserResponse syncUserFromFirebase(String uid){
     UserRecord firebaseUser;

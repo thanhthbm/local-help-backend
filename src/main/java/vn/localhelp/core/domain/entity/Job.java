@@ -36,6 +36,7 @@ import vn.localhelp.core.util.constant.JobStatus;
 @Builder
 @EntityListeners(AuditingEntityListener.class)
 public class Job {
+  /** Khóa chính của công việc, cũng được dùng như id giao dịch trong màn thống kê. */
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
@@ -49,15 +50,19 @@ public class Job {
   @Enumerated(EnumType.STRING)
   private JobStatus jobStatus;
 
+  /** Thời điểm tạo job; FinanceService dùng để lọc theo tháng và chia biểu đồ tuần. */
   @CreatedDate
   private LocalDateTime createdAt;
 
+  /** Người tạo job, được tính là spending khi job hoàn thành. */
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "creator_id")
   private User creator;
+  /** Người nhận làm job, được tính là earning khi job hoàn thành. */
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "helper_id")
   private User helper;
+  /** Danh mục dùng để gom nhóm thống kê và hiển thị icon/màu trên app. */
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "category_id")
   private Category category;

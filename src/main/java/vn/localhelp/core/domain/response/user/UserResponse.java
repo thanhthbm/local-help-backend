@@ -10,7 +10,9 @@ import vn.localhelp.core.util.constant.UserStatus;
 @Data
 @Builder
 public class UserResponse {
+  /** Id nội bộ của user trong database. */
   private Long id;
+  /** UID do Firebase Authentication cấp, dùng để đối chiếu người đang đăng nhập. */
   private String firebaseUid;
 
   private String fullName;
@@ -25,8 +27,11 @@ public class UserResponse {
   private GenderEnum gender;
   private String bio;
   private Boolean isNew;
+  /** Số job người dùng đã hoàn thành với vai trò helper. */
   private int completedJobs;
+  /** Tổng số review mà người dùng nhận được. */
   private int totalReviews;
+  /** Điểm đánh giá trung bình đã làm tròn 1 chữ số thập phân. */
   private double averageRating;
   private double responseRate; // Tỷ lệ phản hồi tin nhắn
 

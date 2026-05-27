@@ -33,6 +33,12 @@ public class UserService {
   private final ReviewRepository reviewRepository;
   private final CloudinaryService cloudinaryService;
 
+  /**
+   * Tạo dữ liệu hồ sơ cho người dùng hiện tại.
+   *
+   * Ngoài thông tin trong bảng users, response còn bổ sung số việc đã hoàn thành,
+   * tổng đánh giá, điểm trung bình và tỷ lệ phản hồi để phục vụ màn hình hồ sơ.
+   */
   public UserResponse getMyProfile(String firebaseUid) {
     User user = userRepository.findByFirebaseUid(firebaseUid)
         .orElseThrow(() -> new NotFoundException("User not found"));
@@ -48,6 +54,12 @@ public class UserService {
     return userMapper.toResponseWithStats(user, completedJobs, totalReviews, finalAvgRating, responseRate);
   }
 
+  /**
+   * Lấy hồ sơ của một người dùng bất kỳ theo id.
+   *
+   * Hàm này dùng cùng cách tính thống kê như getMyProfile để hồ sơ cá nhân
+   * và hồ sơ người khác có cấu trúc response thống nhất.
+   */
   public UserResponse getUserById(Long id) {
     User user = userRepository.findById(id)
         .orElseThrow(() -> new NotFoundException("User not found"));
@@ -61,6 +73,13 @@ public class UserService {
     return userMapper.toResponseWithStats(user, completedJobs, totalReviews, finalAvgRating, responseRate);
   }
 
+  /**
+   * Cập nhật các trường hồ sơ được gửi lên, bỏ qua trường null.
+   *
+   * Avatar có hai nguồn:
+   * - request.avatarUrl: app upload trực tiếp lên Cloudinary rồi gửi URL về backend.
+   * - avatarFile: backend tự upload nếu client gửi file multipart.
+   */
   @Transactional
   public UserResponse updateProfile(String firebaseUid, UpdateProfileRequest request, MultipartFile avatarFile) {
     User user = userRepository.findByFirebaseUid(firebaseUid)
@@ -108,6 +127,9 @@ public class UserService {
     return userRepository.countByRole(UserRole.USER);
   }
 
+  /**
+   * Trả danh sách người dùng cho trang quản trị kèm metadata phân trang.
+   */
   public ResultPaginationDTO<List<UserResponse>> getAllUsersForAdmin(int page, int size) {
     Pageable pageable = PageRequest.of(page - 1, size, Sort.by("createdAt").descending());
 
@@ -130,6 +152,9 @@ public class UserService {
     return result;
   }
 
+  /**
+   * Cập nhật trạng thái tài khoản người dùng từ trang quản trị.
+   */
   @Transactional
   public UserResponse updateUserStatus(Long userId, UserStatus newStatus) {
     User user = userRepository.findById(userId)

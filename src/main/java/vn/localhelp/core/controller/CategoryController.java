@@ -24,24 +24,38 @@ import vn.localhelp.core.service.CategoryService;
 public class CategoryController {
   private final CategoryService categoryService;
 
+  /**
+   * Lấy toàn bộ danh mục công việc để hiển thị trong app và admin.
+   */
   @GetMapping
   public ResponseEntity<List<CategoryResponse>> getAllCategories() {
     List<CategoryResponse> categories = categoryService.getAllCategories();
     return ResponseEntity.ok(categories);
   }
 
+  /**
+   * Lấy chi tiết một danh mục theo id.
+   */
   @GetMapping("/{id}")
   public ResponseEntity<CategoryResponse> getCategoryById(@PathVariable String id) {
     CategoryResponse category = categoryService.getCategoryById(Long.parseLong(id));
     return ResponseEntity.ok(category);
   }
 
+  /**
+   * Tạo danh mục mới từ trang admin.
+   *
+   * Chỉ tài khoản có role ADMIN được phép gọi API này.
+   */
   @PostMapping
   @PreAuthorize("hasRole('ADMIN')")
   public ResponseEntity<CategoryResponse> createCategory(@Valid @RequestBody CategoryRequest request) {
     return ResponseEntity.ok(categoryService.create(request));
   }
 
+  /**
+   * Cập nhật thông tin danh mục từ trang admin.
+   */
   @PutMapping("/{id}")
   @PreAuthorize("hasRole('ADMIN')")
   public ResponseEntity<CategoryResponse> updateCategory(
@@ -50,6 +64,9 @@ public class CategoryController {
     return ResponseEntity.ok(categoryService.update(id, request));
   }
 
+  /**
+   * Xóa danh mục theo id từ trang admin.
+   */
   @DeleteMapping("/{id}")
   @PreAuthorize("hasRole('ADMIN')")
   public ResponseEntity<Void> deleteCategory(@PathVariable Long id) {

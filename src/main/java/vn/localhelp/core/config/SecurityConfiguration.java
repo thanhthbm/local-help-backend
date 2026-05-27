@@ -19,6 +19,12 @@ public class SecurityConfiguration {
   private final CustomAccessDeniedHandler customAccessDeniedHandler;
   private final UserRepository userRepository;
 
+  /**
+   * Cấu hình security chung cho backend.
+   *
+   * Các request có Bearer token sẽ đi qua FirebaseAuthFilter; các endpoint public
+   * được permitAll, còn endpoint còn lại cần xác thực hoặc role theo @PreAuthorize.
+   */
   @Bean
   SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 

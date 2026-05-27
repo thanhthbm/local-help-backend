@@ -19,6 +19,12 @@ import lombok.extern.slf4j.Slf4j;
 public class AuthController {
   private final AuthService authService;
 
+  /**
+   * Đồng bộ phiên đăng nhập Firebase với database backend.
+   *
+   * Client đăng nhập bằng Firebase trước, gửi Firebase ID token trong header
+   * Authorization, sau đó gọi API này để backend tạo mới hoặc cập nhật bản ghi User.
+   */
   @ApiMessage("Login sync user from Firebase")
   @PostMapping("/login")
   public ResponseEntity<UserResponse> login(){

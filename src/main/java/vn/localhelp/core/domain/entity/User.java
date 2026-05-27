@@ -34,10 +34,12 @@ import vn.localhelp.core.util.constant.UserStatus;
 @AllArgsConstructor
 @EntityListeners(AuditingEntityListener.class)
 public class User {
+  /** Khóa chính nội bộ của người dùng trong hệ thống. */
   @Id
   @GeneratedValue(strategy = jakarta.persistence.GenerationType.IDENTITY)
   private Long id;
 
+  /** UID từ Firebase Authentication, dùng để liên kết request đăng nhập với user trong DB. */
   @Column(name = "firebase_uid", unique = true, nullable = false, length = 50)
   private String firebaseUid;
 
@@ -71,12 +73,15 @@ public class User {
   @Column(nullable = false, length = 20)
   private UserRole role;
 
+  /** Các job user tạo với vai trò người thuê. */
   @OneToMany(mappedBy = "creator", fetch = FetchType.LAZY)
   private List<Job> jobsCreated;
 
+  /** Các job user nhận làm với vai trò helper. */
   @OneToMany(mappedBy = "helper", fetch = FetchType.LAZY)
   private List<Job> jobsCompleted;
 
+  /** Mô tả cá nhân hiển thị trên hồ sơ. */
   @Column(columnDefinition = "TEXT")
   private String bio;
 

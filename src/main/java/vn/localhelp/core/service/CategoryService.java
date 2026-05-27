@@ -21,6 +21,12 @@ public class CategoryService {
   private final CategoryRepository categoryRepository;
   private final CategoryMapper categoryMapper;
 
+  /**
+   * Lấy danh sách danh mục công việc.
+   *
+   * Kết quả được cache bằng key "all" vì dữ liệu danh mục được dùng ở nhiều màn
+   * và ít thay đổi hơn dữ liệu công việc.
+   */
   @Cacheable(
       value = "categories",
       key = "'all'",
@@ -34,6 +40,9 @@ public class CategoryService {
         .map(categoryMapper::toResponse).collect(Collectors.toList());
   }
 
+  /**
+   * Lấy một danh mục theo id, có cache riêng theo id.
+   */
   @Cacheable(
       value = "categories",
       key = "#id",
@@ -48,6 +57,9 @@ public class CategoryService {
   }
 
 
+  /**
+   * Tạo danh mục mới và xóa cache danh sách để lần đọc tiếp theo lấy dữ liệu mới.
+   */
   @Transactional
   @CacheEvict(
       value = "categories",
@@ -59,6 +71,9 @@ public class CategoryService {
     return categoryMapper.toResponse(savedCategory);
   }
 
+  /**
+   * Cập nhật danh mục và xóa cả cache chi tiết lẫn cache danh sách.
+   */
   @Transactional
   @Caching(evict = {
       @CacheEvict(
@@ -80,6 +95,9 @@ public class CategoryService {
     return categoryMapper.toResponse(updatedCategory);
   }
 
+  /**
+   * Xóa danh mục nếu tồn tại và làm sạch cache liên quan.
+   */
   @Transactional
   @Caching(evict = {
       @CacheEvict(

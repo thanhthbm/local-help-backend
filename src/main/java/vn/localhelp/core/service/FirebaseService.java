@@ -18,6 +18,12 @@ public class FirebaseService {
 
   private final Firestore firestore;
 
+  /**
+   * Gán custom claim role cho Firebase user.
+   *
+   * Đây là API ngoài của Firebase Admin SDK; backend có thể dùng claim này để
+   * đồng bộ quyền giữa Firebase và bảng users nếu cần.
+   */
   public void setUserRole(String uid, String role) throws FirebaseAuthException {
     Map<String, Object> claims = new HashMap<>();
     claims.put("role", role);

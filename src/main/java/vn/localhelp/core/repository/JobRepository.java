@@ -13,6 +13,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public interface JobRepository extends JpaRepository<Job, Long>, JpaSpecificationExecutor<Job> {
+  /** Đếm số job đã hoàn thành của user với vai trò helper, dùng cho thống kê hồ sơ. */
   long countByHelperIdAndJobStatus(Long helperId, JobStatus status);
 
   @Query("SELECT j FROM Job j "
@@ -60,7 +61,18 @@ public interface JobRepository extends JpaRepository<Job, Long>, JpaSpecificatio
 
     Page<Job> findByCreatorIdOrderByCreatedAtDesc(Long creatorId, Pageable pageable);
 
+    /**
+     * Lấy các job mà user là người thuê/creator trong khoảng thời gian.
+     *
+     * FinanceServiceImpl dùng hàm này để tính thống kê spending.
+     */
     List<Job> findByCreatorIdAndJobStatusAndCreatedAtBetween(Long creatorId, JobStatus status, LocalDateTime start, LocalDateTime end);
+
+    /**
+     * Lấy các job mà user là người làm/helper trong khoảng thời gian.
+     *
+     * FinanceServiceImpl dùng hàm này để tính thống kê earning.
+     */
     List<Job> findByHelperIdAndJobStatusAndCreatedAtBetween(Long helperId, JobStatus status, LocalDateTime start, LocalDateTime end);
 
 }
