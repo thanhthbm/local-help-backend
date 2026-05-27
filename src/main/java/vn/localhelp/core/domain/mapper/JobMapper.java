@@ -10,9 +10,29 @@ import vn.localhelp.core.domain.entity.Job;
 import vn.localhelp.core.domain.entity.JobImage;
 import vn.localhelp.core.domain.request.job.CreateJobRequest;
 import vn.localhelp.core.domain.response.job.JobResponse;
-
+/**
+ * MapStruct Mapper chuyển đổi giữa Job entity và các DTO liên quan.
+ *
+ * <p>uses = {UserMapper.class, CategoryMapper.class}: MapStruct tự động dùng
+ * các mapper phụ trợ này để map nested objects (User, Category).</p>
+ *
+ */
 @Mapper(componentModel = "spring", uses = {UserMapper.class, CategoryMapper.class})
 public interface JobMapper {
+  /**
+   * Chuyển CreateJobRequest sang Job entity để lưu DB.
+   *
+   * <p>Các trường được ignore vì sẽ được set thủ công trong JobService:</p>
+   * <ul>
+   *   <li>id – auto-increment, không set từ request.</li>
+   *   <li>createdAt, jobStatus – set trong service (OPEN, LocalDateTime.now()).</li>
+   *   <li>creator, category – lookup từ DB sau khi map.</li>
+   *   <li>jobImages – xử lý riêng vì có relationship phức tạp.</li>
+   * </ul>
+   *
+   * @param createJobRequest DTO chứa dữ liệu tạo/cập nhật công việc
+   * @return                 Job entity chưa gán các quan hệ xử lý ở service
+   */
   @Mapping(target = "id", ignore = true)
   @Mapping(target = "createdAt", ignore = true)
   @Mapping(target = "jobStatus", ignore = true)
@@ -21,6 +41,20 @@ public interface JobMapper {
   @Mapping(target = "jobImages", ignore = true)
   Job toEntity(CreateJobRequest createJobRequest);
 
+  /**
+   * Chuyển Job entity sang JobResponse DTO trả về client.
+   *
+   * <p>Mapping quan trọng:</p>
+   * <ul>
+   *   <li>jobStatus → status: đổi tên field.</li>
+   *   <li>jobImages → images: dùng @Named("mapJobImagesToStrings") chuyển List<JobImage> → List<String>.</li>
+   *   <li>category.name → categoryName, category.iconUrl → categoryIcon.</li>
+   *   <li>creator.fullName/id/avatarUrl/reputationScore → creatorName/Id/Avatar/Rating.</li>
+   * </ul>
+   *
+   * @param job Job entity cần chuyển đổi
+   * @return    JobResponse DTO trả về Android
+   */
   @Mapping(source = "jobStatus", target = "status")
   @Mapping(source = "jobImages", target = "images", qualifiedByName = "mapJobImagesToStrings")
   @Mapping(source = "category.name", target = "categoryName")
@@ -30,7 +64,15 @@ public interface JobMapper {
   @Mapping(source = "creator.avatarUrl", target = "creatorAvatar")
   @Mapping(source = "creator.reputationScore", target = "creatorRating")
   JobResponse toResponse(Job job);
-
+  /**
+   * Chuyển List<JobImage> entity sang List<String> (chỉ lấy imageUrl).
+   *
+   * <p>Guard null: nếu jobImages == null trả Collections.emptyList() thay vì NullPointerException.
+   * @Named("mapJobImagesToStrings") để MapStruct tham chiếu đúng method này.</p>
+   *
+   * @param jobImages  Danh sách JobImage entity
+   * @return           Danh sách URL ảnh dạng String
+   */
   @Named("mapJobImagesToStrings")
   default List<String> mapImages(List<JobImage> jobImages) {
     if (jobImages == null) return Collections.emptyList();

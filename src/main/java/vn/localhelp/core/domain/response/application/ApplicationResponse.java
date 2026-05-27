@@ -4,6 +4,11 @@ import lombok.Builder;
 import lombok.Data;
 import java.time.LocalDateTime;
 
+/**
+ * DTO trả về thông tin một helper đã ứng tuyển vào công việc.
+ *
+ * Dùng trong API lấy danh sách ứng tuyển để creator xem và chọn thợ phù hợp.
+ */
 @Data
 @Builder
 public class ApplicationResponse {

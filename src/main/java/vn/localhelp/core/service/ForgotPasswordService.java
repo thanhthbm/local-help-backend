@@ -19,6 +19,13 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Service xử lý nghiệp vụ khôi phục mật khẩu bằng OTP email.
+ *
+ * <p>Service dùng Firebase Authentication để kiểm tra tài khoản và cập nhật mật khẩu.
+ * OTP/resetToken hiện được lưu tạm bằng ConcurrentHashMap theo email; khi triển khai nhiều
+ * instance nên chuyển sang Redis để các instance dùng chung trạng thái.</p>
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -26,12 +33,24 @@ public class ForgotPasswordService {
 
     private final JavaMailSender mailSender;
     
-    // In a real production app, use Redis instead of ConcurrentHashMap to scale across instances
+    /**
+     * Bộ nhớ tạm lưu OTP/resetToken theo email trong luồng khôi phục mật khẩu.
+     */
     private final Map<String, String> otpStorage = new ConcurrentHashMap<>();
     private final Map<String, String> resetTokenStorage = new ConcurrentHashMap<>();
     
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
+    /**
+     * Gửi OTP khôi phục mật khẩu đến email.
+     *
+     * <p>Service kiểm tra email có tồn tại trên Firebase Authentication, sinh OTP 6 chữ số,
+     * lưu OTP trong 5 phút và gửi email qua JavaMailSender.</p>
+     *
+     * @param email Email tài khoản cần khôi phục mật khẩu
+     * @throws NotFoundException nếu email không tồn tại trên Firebase
+     * @throws RuntimeException  nếu hệ thống không gửi được email
+     */
     public void sendOtp(String email) {
         try {
             // Validate if user exists on Firebase
@@ -64,6 +83,17 @@ public class ForgotPasswordService {
         }
     }
 
+    /**
+     * Xác thực OTP và sinh resetToken.
+     *
+     * <p>OTP hợp lệ sẽ bị xóa ngay sau khi dùng để tránh sử dụng lại. resetToken được lưu
+     * tạm trong 15 phút và là điều kiện bắt buộc ở bước đặt lại mật khẩu.</p>
+     *
+     * @param email Email đã nhận OTP
+     * @param otp   Mã OTP người dùng nhập
+     * @return      resetToken dùng cho API reset-password
+     * @throws RuntimeException nếu OTP sai hoặc đã hết hạn
+     */
     public String verifyOtp(String email, String otp) {
         String storedOtp = otpStorage.get(email);
         
@@ -84,6 +114,17 @@ public class ForgotPasswordService {
         return resetToken;
     }
 
+    /**
+     * Đặt lại mật khẩu mới trên Firebase Authentication.
+     *
+     * <p>Service kiểm tra resetToken theo email, tìm user trên Firebase và cập nhật password
+     * bằng Firebase Admin SDK. Token được xóa sau khi cập nhật thành công.</p>
+     *
+     * @param email       Email tài khoản cần đổi mật khẩu
+     * @param resetToken  Token đã được cấp ở bước xác thực OTP
+     * @param newPassword Mật khẩu mới
+     * @throws RuntimeException nếu resetToken không hợp lệ hoặc Firebase cập nhật thất bại
+     */
     public void resetPassword(String email, String resetToken, String newPassword) {
         String storedToken = resetTokenStorage.get(email);
         

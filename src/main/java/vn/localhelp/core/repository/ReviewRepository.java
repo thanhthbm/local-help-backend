@@ -8,18 +8,20 @@ import org.springframework.data.repository.query.Param;
 import vn.localhelp.core.domain.entity.Review;
 
 import java.util.Optional;
-
+/**
+ * Spring Data JPA Repository cho entity Review.
+ *
+ * <p>Cung cấp các phương thức truy vấn đánh giá theo reviewee và job,
+ * bao gồm phân trang và tính điểm trung bình.</p>
+ *
+ */
 public interface ReviewRepository extends JpaRepository<Review, Long> {
-  /** Đếm tổng số đánh giá mà một người dùng nhận được trên hồ sơ. */
   long countByRevieweeId(Long revieweeId);
 
-  /** Tính điểm rating trung bình của người được đánh giá. */
   @Query("SELECT AVG(r.rating) FROM Review r WHERE r.reviewee.id = :revieweeId")
   Double getAverageRatingByRevieweeId(@Param("revieweeId") Long revieweeId);
 
-  /** Tìm review gắn với một job cụ thể để tránh tạo trùng đánh giá. */
   Optional<Review> findByJobId(Long jobId);
 
-  /** Lấy danh sách đánh giá hiển thị trên hồ sơ người dùng. */
   Page<Review> findByRevieweeId(Long revieweeId, Pageable pageable);
 }

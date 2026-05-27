@@ -9,7 +9,6 @@ import vn.localhelp.core.util.constant.UserRole;
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
 
-  /** Tìm user nội bộ theo Firebase UID của tài khoản đang đăng nhập. */
   Optional<User> findByFirebaseUid(String localId);
   /** Đếm số user theo role, dùng cho trang thống kê/admin. */
   long countByRole(UserRole role);

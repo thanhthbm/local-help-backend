@@ -47,6 +47,10 @@ public class AuthService {
             .status(UserStatus.ACTIVE)
             .build());
 
+    if (user.getStatus() != UserStatus.ACTIVE){
+      throw new RuntimeException("User is not active");
+    }
+
     user.setEmail(firebaseUser.getEmail());
     user.setPhone(firebaseUser.getPhoneNumber());
     log.debug(user.toString());

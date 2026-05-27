@@ -19,6 +19,14 @@ public class FirebaseConfig {
   @Value("${firebase.credential.path}")
   private String credentialPath;
 
+  /**
+   * Khởi tạo Firebase Admin SDK từ file service account JSON.
+   *
+   * <p>Firebase Admin SDK được backend dùng để xác thực Firebase token và cập nhật mật khẩu
+   * trong chức năng khôi phục mật khẩu.</p>
+   *
+   * @throws IOException nếu không đọc được file credential
+   */
   @PostConstruct
   public void init() throws IOException {
     if (credentialPath == null || credentialPath.trim().isEmpty()) {
@@ -35,6 +43,11 @@ public class FirebaseConfig {
     }
   }
 
+  /**
+   * Cung cấp Firestore bean cho các service cần đồng bộ trạng thái realtime.
+   *
+   * @return Firestore client lấy từ Firebase Admin SDK
+   */
   @Bean
   public Firestore firestore() {
     return FirestoreClient.getFirestore();

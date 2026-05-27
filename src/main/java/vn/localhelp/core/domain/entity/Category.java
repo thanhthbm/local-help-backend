@@ -13,6 +13,12 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+/**
+ * JPA Entity ánh xạ bảng categories, lưu danh mục công việc.
+ *
+ * <p>Khi đăng hoặc cập nhật công việc, backend tìm Category theo categoryId trong
+ * CreateJobRequest và gán vào Job trước khi lưu database.</p>
+ */
 @Entity
 @Getter
 @Setter

@@ -25,6 +25,12 @@ import vn.localhelp.core.util.constant.GenderEnum;
 import vn.localhelp.core.util.constant.UserRole;
 import vn.localhelp.core.util.constant.UserStatus;
 
+/**
+ * JPA Entity ánh xạ bảng users, lưu hồ sơ người dùng trong hệ thống.
+ *
+ * <p>firebaseUid liên kết user backend với Firebase Authentication để xác định người dùng
+ * hiện tại khi đăng/sửa/hủy công việc. Email được dùng trong luồng khôi phục mật khẩu.</p>
+ */
 @Entity
 @Table(name = "users")
 @Getter
@@ -39,10 +45,12 @@ public class User {
   @GeneratedValue(strategy = jakarta.persistence.GenerationType.IDENTITY)
   private Long id;
 
-  /** UID từ Firebase Authentication, dùng để liên kết request đăng nhập với user trong DB. */
   @Column(name = "firebase_uid", unique = true, nullable = false, length = 50)
   private String firebaseUid;
 
+  /**
+   * Email tài khoản, được dùng làm khóa trong luồng gửi OTP và đặt lại mật khẩu.
+   */
   @Column(nullable = false, unique = true, length = 100)
   private String email;
 
@@ -73,11 +81,9 @@ public class User {
   @Column(nullable = false, length = 20)
   private UserRole role;
 
-  /** Các job user tạo với vai trò người thuê. */
   @OneToMany(mappedBy = "creator", fetch = FetchType.LAZY)
   private List<Job> jobsCreated;
 
-  /** Các job user nhận làm với vai trò helper. */
   @OneToMany(mappedBy = "helper", fetch = FetchType.LAZY)
   private List<Job> jobsCompleted;
 

@@ -7,6 +7,16 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.server.ResponseStatusException;
 
 public class FirebaseUtil {
+  /**
+   * Lấy Firebase UID của user hiện tại từ SecurityContext.
+   *
+   * <p>Hàm kiểm tra các trường hợp chưa đăng nhập như authentication null, anonymous user
+   * hoặc principal không hợp lệ. Nếu request đã được FirebaseAuthFilter xử lý, UID được lấy
+   * từ CustomUserDetails hoặc authentication name.</p>
+   *
+   * @return Firebase UID của user hiện tại
+   * @throws ResponseStatusException HTTP 401 nếu request chưa được xác thực
+   */
   public static String getCurrentUserUid() {
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
